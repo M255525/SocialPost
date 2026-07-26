@@ -1,0 +1,875 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>社群貼文產生器 · SocialPost</title>
+<style>
+  :root{
+    --bg:#12131c;
+    --bg-alt:#171827;
+    --panel:#1c1e30;
+    --panel-raised:#232640;
+    --line:#33365a;
+    --line-soft:#26283f;
+    --text:#eef0fb;
+    --text-dim:#a8acc9;
+    --text-faint:#6d7093;
+    --violet:#7c6cf5;
+    --violet-soft:rgba(124,108,245,0.16);
+    --violet-glow:rgba(124,108,245,0.5);
+    --teal:#3fc7b0;
+    --red:#e0566a;
+    --amber:#e8a33d;
+    --fb:#1877F2;
+    --ig1:#f58529; --ig2:#dd2a7b; --ig3:#8134af;
+    --x:#e8e9f0;
+    --th:#e8e9f0;
+    --font-mono:ui-monospace,"Cascadia Mono","SFMono-Regular",Consolas,"Liberation Mono",monospace;
+    --font-sans:"Microsoft JhengHei","PingFang TC","Noto Sans TC",sans-serif;
+    --radius:12px;
+  }
+  *{box-sizing:border-box;}
+  html{-webkit-text-size-adjust:100%;}
+  body{
+    margin:0;background:var(--bg);
+    background-image:
+      radial-gradient(circle at 15% 0%, rgba(124,108,245,0.08), transparent 45%),
+      radial-gradient(circle at 90% 15%, rgba(63,199,176,0.06), transparent 40%);
+    color:var(--text);font-family:var(--font-sans);line-height:1.6;min-height:100vh;
+  }
+  a{color:var(--violet);}
+  ::selection{background:var(--violet);color:#fff;}
+  :focus-visible{outline:2px solid var(--violet);outline-offset:2px;}
+
+  .topbar{
+    display:flex;align-items:center;justify-content:space-between;padding:16px 24px;
+    border-bottom:1px solid var(--line-soft);
+    background:linear-gradient(180deg, var(--bg-alt), var(--bg));
+    position:sticky;top:0;z-index:20;backdrop-filter:blur(6px);
+  }
+  .brand{display:flex;align-items:center;gap:10px;font-family:var(--font-mono);letter-spacing:.04em;}
+  .brand .dot{width:9px;height:9px;border-radius:50%;background:var(--violet);box-shadow:0 0 8px var(--violet-glow);}
+  .brand strong{font-size:15px;font-weight:700;}
+  .topbar nav a{
+    font-family:var(--font-mono);font-size:13px;color:var(--text-dim);text-decoration:none;
+    border:1px solid var(--line);padding:7px 14px;border-radius:6px;transition:.15s;
+  }
+  .topbar nav a:hover{color:var(--violet);border-color:var(--violet);}
+
+  .hero{
+    padding:52px 24px 34px;text-align:center;
+    background:linear-gradient(180deg, var(--bg-alt), var(--bg));
+    border-bottom:1px solid var(--line-soft);
+  }
+  .hero .eyebrow{font-family:var(--font-mono);font-size:12px;letter-spacing:.35em;color:var(--text-faint);text-transform:uppercase;margin-bottom:14px;}
+  .hero h1{font-size:clamp(26px,4.6vw,40px);margin:0 0 12px;font-weight:800;letter-spacing:-0.01em;}
+  .hero h1 .accent{color:var(--violet);}
+  .hero p.lead{max-width:600px;margin:0 auto;color:var(--text-dim);font-size:15.5px;}
+
+  main{max-width:920px;margin:0 auto;padding:40px 24px 80px;}
+  .btn{
+    font-family:var(--font-mono);font-size:13px;letter-spacing:.03em;
+    background:var(--panel-raised);color:var(--text);border:1px solid var(--line);
+    padding:9px 16px;border-radius:6px;cursor:pointer;transition:.15s;
+  }
+  .btn:hover{border-color:var(--violet);color:var(--violet);}
+  .btn.primary{background:var(--violet);color:#fff;border-color:var(--violet);font-weight:700;}
+  .btn.primary:hover{background:#8f81f8;color:#fff;box-shadow:0 0 16px var(--violet-glow);}
+  .btn.ghost{background:transparent;}
+  .btn:disabled{opacity:.45;cursor:not-allowed;}
+  .btn:disabled:hover{border-color:var(--line);color:var(--text);}
+
+  .card{
+    background:linear-gradient(180deg, var(--panel-raised), var(--panel));
+    border:1px solid var(--line);border-radius:var(--radius);
+    padding:22px 24px 24px;margin-bottom:22px;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,0.04), 0 6px 18px rgba(0,0,0,0.25);
+  }
+  .card h2{font-size:16px;margin:0 0 4px;display:flex;align-items:center;gap:9px;}
+  .card h2 .num{
+    font-family:var(--font-mono);font-size:12px;color:var(--violet);border:1px solid var(--line);
+    border-radius:6px;width:26px;height:26px;display:flex;align-items:center;justify-content:center;
+    background:var(--bg-alt);flex-shrink:0;
+  }
+  .card .hint{font-size:13px;color:var(--text-dim);margin:8px 0 14px;}
+
+  label.field-label{display:block;font-family:var(--font-mono);font-size:12px;color:var(--text-faint);letter-spacing:.05em;margin-bottom:6px;}
+  textarea, select, input[type=text], input[type=password]{
+    width:100%;background:var(--bg-alt);color:var(--text);border:1px solid var(--line);
+    border-radius:8px;padding:11px 13px;font-family:var(--font-sans);font-size:14.5px;line-height:1.65;
+  }
+  textarea{resize:vertical;min-height:110px;}
+  textarea::placeholder, input::placeholder{color:var(--text-faint);}
+  textarea:focus, select:focus, input:focus{border-color:var(--violet);}
+
+  .row{display:flex;gap:14px;flex-wrap:wrap;margin-top:14px;}
+  .row > div{flex:1;min-width:180px;}
+
+  .platform-grid{display:flex;flex-wrap:wrap;gap:10px;margin-top:10px;}
+  .platform-check{
+    display:flex;align-items:center;gap:8px;
+    background:var(--bg-alt);border:1px solid var(--line);border-radius:8px;
+    padding:9px 14px;cursor:pointer;font-size:13.5px;transition:.15s;
+  }
+  .platform-check:hover{border-color:var(--violet);}
+  .platform-check input{width:auto;}
+  .platform-check .swatch{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
+  .platform-check[data-platform="facebook"] .swatch{background:var(--fb);}
+  .platform-check[data-platform="instagram"] .swatch{background:linear-gradient(135deg,var(--ig1),var(--ig2),var(--ig3));}
+  .platform-check[data-platform="x"] .swatch{background:var(--x);}
+  .platform-check[data-platform="threads"] .swatch{background:var(--th);}
+
+  .upload-zone{
+    display:flex;gap:12px;flex-wrap:wrap;margin-top:12px;
+  }
+  .upload-btn{
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;
+    width:110px;height:90px;border:1px dashed var(--line);border-radius:8px;background:var(--bg-alt);
+    cursor:pointer;font-family:var(--font-mono);font-size:11px;color:var(--text-faint);text-align:center;padding:6px;
+  }
+  .upload-btn:hover{border-color:var(--violet);color:var(--violet);}
+  .upload-btn input{display:none;}
+  .media-thumbs{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px;}
+  .thumb{position:relative;width:90px;height:90px;border-radius:8px;overflow:hidden;border:1px solid var(--line);}
+  .thumb img, .thumb video{width:100%;height:100%;object-fit:cover;}
+  .thumb .rm{
+    position:absolute;top:3px;right:3px;width:20px;height:20px;border-radius:50%;
+    background:rgba(0,0,0,0.6);color:#fff;border:none;cursor:pointer;font-size:12px;line-height:1;
+  }
+  .thumb .rm:hover{background:var(--red);}
+  .thumb .tag{position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,0.55);color:#fff;font-size:9px;text-align:center;padding:2px 0;font-family:var(--font-mono);}
+
+  details.api-settings{
+    margin-top:14px;border:1px solid var(--line-soft);border-radius:8px;padding:2px 14px;background:var(--bg-alt);
+  }
+  details.api-settings summary{cursor:pointer;font-family:var(--font-mono);font-size:12px;color:var(--text-dim);padding:10px 0;letter-spacing:.03em;}
+  details.api-settings[open] summary{color:var(--teal);}
+  .api-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:4px 0 12px;}
+  .api-grid label{display:flex;flex-direction:column;gap:5px;font-size:12px;color:var(--text-faint);font-family:var(--font-mono);}
+  .api-grid label.full{grid-column:1/-1;}
+  .api-note{font-size:12px;color:var(--text-faint);margin:0 0 12px;line-height:1.6;}
+
+  .gen-report{font-size:13px;color:var(--text-dim);margin-top:12px;line-height:1.75;}
+  .gen-report .ok{color:var(--teal);}
+  .gen-report .bad{color:var(--red);}
+  .gen-report .warn{color:var(--amber);}
+
+  .results-grid{display:flex;flex-direction:column;gap:18px;}
+  .result-card{border-left:4px solid var(--line);}
+  .result-card[data-platform="facebook"]{border-left-color:var(--fb);}
+  .result-card[data-platform="instagram"]{border-left-color:#dd2a7b;}
+  .result-card[data-platform="x"]{border-left-color:var(--x);}
+  .result-card[data-platform="threads"]{border-left-color:var(--th);}
+  .result-head{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:10px;}
+  .result-title{display:flex;align-items:center;gap:8px;font-weight:700;font-size:15px;}
+  .result-title .swatch{width:11px;height:11px;border-radius:50%;flex-shrink:0;}
+  .result-title[data-platform="facebook"] .swatch{background:var(--fb);}
+  .result-title[data-platform="instagram"] .swatch{background:linear-gradient(135deg,var(--ig1),var(--ig2),var(--ig3));}
+  .result-title[data-platform="x"] .swatch{background:var(--x);}
+  .result-title[data-platform="threads"] .swatch{background:var(--th);}
+  .meter{font-family:var(--font-mono);font-size:12px;color:var(--text-dim);}
+  .meter.over{color:var(--red);}
+  .meter b{color:var(--violet);}
+  .result-card textarea{min-height:150px;font-size:14px;}
+  .result-actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:12px;}
+  .fb-panel{margin-top:14px;border-top:1px solid var(--line-soft);padding-top:14px;}
+  .fb-status{font-size:13px;margin-top:10px;color:var(--text-dim);}
+  .fb-status.ok{color:var(--teal);}
+  .fb-status.bad{color:var(--red);}
+  .placeholder-empty{color:var(--text-faint);font-size:13.5px;text-align:center;padding:20px 0;}
+
+  footer{border-top:1px solid var(--line-soft);background:var(--bg-alt);padding:32px 24px 40px;}
+  .warn-box{
+    max-width:920px;margin:0 auto 22px;background:rgba(224,86,106,0.08);border:1px solid rgba(224,86,106,0.35);
+    border-radius:8px;padding:16px 18px;font-size:13px;color:var(--text-dim);
+  }
+  .warn-box strong{color:var(--red);}
+  .warn-box ul{margin:8px 0 0;padding-left:20px;}
+  .footer-meta{
+    max-width:920px;margin:0 auto;display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px;
+    font-size:12.5px;color:var(--text-faint);font-family:var(--font-mono);
+  }
+  .footer-meta a{color:var(--text-dim);}
+
+  .toast{
+    position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);
+    background:var(--panel-raised);border:1px solid var(--violet);color:var(--text);
+    padding:10px 20px;border-radius:8px;font-size:13px;font-family:var(--font-mono);
+    opacity:0;pointer-events:none;transition:.25s;z-index:50;
+  }
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+  @media (max-width:640px){
+    .api-grid{grid-template-columns:1fr;}
+    .row{flex-direction:column;}
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand"><span class="dot"></span><strong>社群貼文產生器</strong></div>
+  <nav><a href="manual.html">操作手冊</a></nav>
+</div>
+
+<div class="hero">
+  <div class="eyebrow">FACEBOOK · INSTAGRAM · X · THREADS</div>
+  <h1>一份主題，<span class="accent">四種平台優化貼文</span></h1>
+  <p class="lead">輸入主題、方向或現成內容，依各平台字數與語氣慣例產生優化文案；Facebook 可直接登入自動發布，其餘平台複製貼上即可手動發布。</p>
+</div>
+
+<main>
+
+  <div class="card">
+    <h2><span class="num">1</span>貼文素材</h2>
+    <p class="hint">輸入主題、方向或一段完整草稿都可以，AI（或規則式引擎）會依下方勾選的平台各自改寫成優化版本。</p>
+    <label class="field-label" for="topicInput">主題／方向／內容</label>
+    <textarea id="topicInput" placeholder="例：週末快閃優惠，全館滿千折百，只到週日晚上12點截止"></textarea>
+
+    <div class="row">
+      <div>
+        <label class="field-label" for="toneSelect">語氣</label>
+        <select id="toneSelect">
+          <option value="friendly">親切口語</option>
+          <option value="professional">專業正式</option>
+          <option value="promo">促購優惠</option>
+          <option value="announcement">正式公告</option>
+        </select>
+      </div>
+    </div>
+
+    <label class="field-label" style="margin-top:14px;">發布平台（可複選）</label>
+    <div class="platform-grid" id="platformGrid">
+      <label class="platform-check" data-platform="facebook"><input type="checkbox" value="facebook" checked><span class="swatch"></span>Facebook</label>
+      <label class="platform-check" data-platform="instagram"><input type="checkbox" value="instagram" checked><span class="swatch"></span>Instagram</label>
+      <label class="platform-check" data-platform="x"><input type="checkbox" value="x"><span class="swatch"></span>X（Twitter）</label>
+      <label class="platform-check" data-platform="threads"><input type="checkbox" value="threads"><span class="swatch"></span>Threads</label>
+    </div>
+
+    <label class="field-label" style="margin-top:16px;">圖片／影片素材（選用）</label>
+    <div class="upload-zone">
+      <label class="upload-btn">＋ 上傳圖片<br>（可多張）<input type="file" id="imageInput" accept="image/*" multiple></label>
+      <label class="upload-btn">＋ 上傳影片<br>（單一檔案）<input type="file" id="videoInput" accept="video/*"></label>
+    </div>
+    <div class="media-thumbs" id="mediaThumbs"></div>
+
+    <details class="api-settings">
+      <summary>AI 優化設定（選用，需自備 API 金鑰）</summary>
+      <div class="api-grid">
+        <label>服務商<select id="aiProvider"></select></label>
+        <label>模型<input type="text" id="aiModel" placeholder="模型名稱"></label>
+        <label class="full">API 金鑰<input type="password" id="aiKey" placeholder="貼上你的 API Key" autocomplete="off"></label>
+      </div>
+      <p class="api-note">金鑰只存在這台電腦的瀏覽器（localStorage），不會送到本工具以外的任何地方。留空時仍可使用「規則式引擎」產生基本優化文案（依平台字數上限截斷、從主題挑關鍵詞組 hashtag），但語意優化效果不如串接 AI。</p>
+    </details>
+
+    <div class="result-actions">
+      <button class="btn primary" id="generateBtn" type="button">產生優化貼文</button>
+    </div>
+    <div id="genReport" class="gen-report" aria-live="polite"></div>
+  </div>
+
+  <div class="card">
+    <h2><span class="num">2</span>貼文預覽與發布</h2>
+    <p class="hint">Facebook 卡片可登入你的粉專帳號直接發布；其餘平台請用「複製文字」自行貼到該平台 App／網站。</p>
+    <div class="results-grid" id="resultsGrid">
+      <p class="placeholder-empty">尚未產生貼文——請在上方填寫素材後按「產生優化貼文」。</p>
+    </div>
+  </div>
+
+</main>
+
+<footer>
+  <div class="warn-box">
+    <strong>使用警語</strong>
+    <ul>
+      <li>「產生優化貼文」若填有 API 金鑰會直接連線到你選擇的服務商，金鑰只存在你的瀏覽器 localStorage，本工具不會經手或保存；留空則使用本機規則式引擎，不連網。</li>
+      <li>Facebook 發布功能會透過官方 Facebook JS SDK 登入你自己的帳號並呼叫 Graph API，發布內容將公開出現在你選定的粉專上——按下「發布到 Facebook」前請務必確認內容與粉專無誤，此動作無法復原。</li>
+      <li>Facebook 登入權杖（access token）只存在你的瀏覽器 localStorage，請勿在共用電腦上使用本工具的 Facebook 發布功能。</li>
+      <li>請勿在任何欄位輸入真實個資、機密資料或受著作權保護的他人內容。</li>
+      <li>AI 生成內容可能有誤，發布前請自行檢查是否符合事實與各平台社群守則；本工具與創作者不對後續發布結果負責。</li>
+      <li>僅供教學、課程及個人使用，禁止未經授權公開發布、販售或商業化使用。</li>
+    </ul>
+  </div>
+  <div class="footer-meta">
+    <span>製作：Mark Tsai｜<a href="mailto:tsaimark@gmail.com">tsaimark@gmail.com</a></span>
+    <a href="manual.html">操作手冊 →</a>
+  </div>
+</footer>
+
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+(function(){
+  function $(id){ return document.getElementById(id); }
+  function escapeHtml(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+  function showToast(msg){
+    var t = $('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(showToast._timer);
+    showToast._timer = setTimeout(function(){ t.classList.remove('show'); }, 2400);
+  }
+
+  /* ---------- 平台規格表 ---------- */
+  var PLATFORM_SPECS = {
+    facebook:  { label:'Facebook',     charLimit: 63206, sweet:'400-600字', hashtagCount:4, hashtagNote:'3-5個，可放文中或文末', tone:'親切口語、鼓勵留言互動，篇幅可以稍長，適合說故事' },
+    instagram: { label:'Instagram',    charLimit: 2200,  sweet:'150-300字', hashtagCount:10, hashtagNote:'8-15個，集中置於文末', tone:'視覺敘事、開頭第一句要抓住眼球、多用emoji與換行分段' },
+    x:         { label:'X（Twitter）', charLimit: 280,   sweet:'~200字',    hashtagCount:2, hashtagNote:'1-2個，精準不氾濫', tone:'簡短有力、一句話講重點，避免贅字' },
+    threads:   { label:'Threads',      charLimit: 500,   sweet:'~300字',    hashtagCount:3, hashtagNote:'2-4個', tone:'輕鬆對話感、像跟朋友聊天，可以有點個人觀點' }
+  };
+
+  var TONE_TEMPLATES = {
+    friendly:     { lead:'嗨大家～', closing:'一起來看看吧！' },
+    professional: { lead:'重要資訊分享：', closing:'如有任何疑問歡迎與我們聯繫。' },
+    promo:        { lead:'好康别錯過！', closing:'手刀行動，數量有限，售完為止！' },
+    announcement: { lead:'公告通知：', closing:'詳情請見以下說明。' }
+  };
+  var TONE_LABELS = { friendly:'親切口語', professional:'專業正式', promo:'促購優惠', announcement:'正式公告' };
+
+  /* ---------- 平台勾選 ---------- */
+  function selectedPlatforms(){
+    return Array.from(document.querySelectorAll('.platform-check input:checked')).map(function(el){ return el.value; });
+  }
+
+  /* ---------- 媒體上傳 ---------- */
+  var mediaState = { images: [], video: null };
+
+  function renderMediaThumbs(){
+    var box = $('mediaThumbs');
+    var html = '';
+    mediaState.images.forEach(function(img){
+      html += '<div class="thumb"><img src="' + img.dataUrl + '" alt=""><button type="button" class="rm" data-kind="image" data-id="' + img.id + '">×</button><span class="tag">圖片</span></div>';
+    });
+    if(mediaState.video){
+      html += '<div class="thumb"><video src="' + mediaState.video.url + '" muted></video><button type="button" class="rm" data-kind="video" data-id="video">×</button><span class="tag">影片</span></div>';
+    }
+    box.innerHTML = html;
+  }
+
+  $('imageInput').addEventListener('change', function(e){
+    Array.from(e.target.files).forEach(function(file){
+      if(!file.type.startsWith('image/')) return;
+      var reader = new FileReader();
+      reader.onload = function(ev){
+        mediaState.images.push({id:'img'+Date.now()+Math.random().toString(36).slice(2,7), file:file, dataUrl:ev.target.result, name:file.name});
+        renderMediaThumbs();
+      };
+      reader.readAsDataURL(file);
+    });
+    this.value = '';
+  });
+
+  $('videoInput').addEventListener('change', function(e){
+    var file = e.target.files[0];
+    if(!file) return;
+    if(!file.type.startsWith('video/')){ showToast('請選擇影片檔案'); this.value=''; return; }
+    if(mediaState.video) URL.revokeObjectURL(mediaState.video.url);
+    mediaState.video = { file:file, url:URL.createObjectURL(file), name:file.name };
+    renderMediaThumbs();
+    this.value = '';
+  });
+
+  $('mediaThumbs').addEventListener('click', function(e){
+    var btn = e.target.closest('button.rm');
+    if(!btn) return;
+    if(btn.getAttribute('data-kind') === 'image'){
+      var id = btn.getAttribute('data-id');
+      mediaState.images = mediaState.images.filter(function(i){ return i.id !== id; });
+    } else {
+      if(mediaState.video) URL.revokeObjectURL(mediaState.video.url);
+      mediaState.video = null;
+    }
+    renderMediaThumbs();
+  });
+
+  /* ---------- 規則式引擎（無 API 金鑰時的 fallback） ---------- */
+  function extractHashtags(topic, count){
+    var stop = ['的','了','是','在','我們','你們','大家','一個','這個','那個','就是','還有','以及','和','與','或','也','都','很','非常','真的','可以','不要','已經','因為','所以','但是','如果','而且','來','去','有','無','個','們'];
+    var tokens = topic.replace(/[，。！？、,.!?：:；;「」『』（）()\n]/g, ' ').split(/\s+/).filter(Boolean);
+    var seen = {}; var tags = [];
+    tokens.forEach(function(t){
+      var clean = t.replace(/[^一-龥a-zA-Z0-9]/g, '');
+      if(clean.length < 2 || stop.indexOf(clean) >= 0 || seen[clean]) return;
+      seen[clean] = true;
+      tags.push('#' + clean);
+    });
+    return tags.slice(0, count);
+  }
+
+  function ruleBasedGenerate(topic, tone, platformKey){
+    var spec = PLATFORM_SPECS[platformKey];
+    var tpl = TONE_TEMPLATES[tone] || TONE_TEMPLATES.friendly;
+    var body = tpl.lead + '\n\n' + topic.trim() + '\n\n' + tpl.closing;
+    var hashtags = extractHashtags(topic, spec.hashtagCount);
+    var full = body + (hashtags.length ? ('\n\n' + hashtags.join(' ')) : '');
+    if(full.length > spec.charLimit){
+      var overBy = full.length - spec.charLimit + 3;
+      body = body.slice(0, Math.max(0, body.length - overBy)) + '…';
+      full = body + (hashtags.length ? ('\n\n' + hashtags.join(' ')) : '');
+    }
+    return full;
+  }
+
+  /* ---------- AI 引擎（比照 Prompt / sbir-generator 既有模式） ---------- */
+  var AI_PROVIDERS = {
+    claude:     {label:'Claude（Anthropic）',       defaultModel:'claude-opus-4-8'},
+    openai:     {label:'OpenAI',                    defaultModel:'gpt-4o-mini'},
+    gemini:     {label:'Gemini（Google AI Studio）', defaultModel:'gemini-3.5-flash'},
+    openrouter: {label:'OpenRouter',                defaultModel:'openai/gpt-4o-mini'}
+  };
+  var API_STORAGE_KEY = 'socialpostApiConfig';
+
+  function loadApiConfig(){
+    try{ return JSON.parse(localStorage.getItem(API_STORAGE_KEY)) || {}; }catch(e){ return {}; }
+  }
+  function persistApiConfig(){
+    try{
+      localStorage.setItem(API_STORAGE_KEY, JSON.stringify({
+        provider: $('aiProvider').value,
+        model: $('aiModel').value.trim(),
+        apiKey: $('aiKey').value.trim()
+      }));
+    }catch(e){}
+  }
+  function initAiPanel(){
+    var sel = $('aiProvider');
+    sel.innerHTML = Object.keys(AI_PROVIDERS).map(function(k){
+      return '<option value="' + k + '">' + AI_PROVIDERS[k].label + '</option>';
+    }).join('');
+    var cfg = loadApiConfig();
+    sel.value = (cfg.provider && AI_PROVIDERS[cfg.provider]) ? cfg.provider : 'claude';
+    $('aiModel').value = cfg.model || AI_PROVIDERS[sel.value].defaultModel;
+    $('aiKey').value = cfg.apiKey || '';
+    sel.addEventListener('change', function(){
+      var modelEl = $('aiModel');
+      var isDefault = Object.keys(AI_PROVIDERS).some(function(k){ return AI_PROVIDERS[k].defaultModel === modelEl.value.trim(); });
+      if(!modelEl.value.trim() || isDefault) modelEl.value = AI_PROVIDERS[sel.value].defaultModel;
+      persistApiConfig();
+    });
+    $('aiModel').addEventListener('input', persistApiConfig);
+    $('aiKey').addEventListener('input', persistApiConfig);
+  }
+
+  function buildAiPrompt(topic, tone, platformKeys){
+    var specLines = platformKeys.map(function(k){
+      var s = PLATFORM_SPECS[k];
+      return '- ' + k + '（' + s.label + '）：字數上限 ' + s.charLimit + ' 字，建議落在 ' + s.sweet + '；hashtag ' + s.hashtagNote + '；語氣要求：' + s.tone;
+    }).join('\n');
+    return '你是一位熟悉台灣社群媒體經營的文案顧問，請把使用者提供的主題／方向／內容，分別改寫成以下每個平台的優化版貼文文案：\n\n'
+      + specLines + '\n\n'
+      + '使用者指定的整體語氣是「' + (TONE_LABELS[tone] || tone) + '」，請在此語氣基礎上依各平台特性微調。\n\n'
+      + '原始主題／方向／內容如下：\n「' + topic + '」\n\n'
+      + '請為每個平台各自產生一份「完整可直接發布」的貼文全文，包含建議的 hashtag（hashtag 直接放在文末，用空白分隔，前面加 #），不要額外加註解、不要條列多個版本讓使用者選。\n\n'
+      + '請只輸出一個 JSON 物件，不要 markdown 圍欄、不要任何其他文字，鍵固定為以下平台代碼（只需包含使用者要求的平台）：\n'
+      + '{' + platformKeys.map(function(k){ return '"' + k + '":"..."'; }).join(',') + '}';
+  }
+
+  async function callLLM(provider, model, apiKey, prompt, onRetry){
+    var url, headers, body, extract;
+    if(provider === 'claude'){
+      url = 'https://api.anthropic.com/v1/messages';
+      headers = {'content-type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'};
+      body = {model: model, max_tokens: 4000, messages: [{role:'user', content: prompt}]};
+      extract = function(d){
+        if(d.stop_reason === 'refusal') throw new Error('模型拒絕了這個請求（refusal）');
+        var t = (d.content || []).filter(function(b){ return b.type === 'text'; }).map(function(b){ return b.text; }).join('');
+        if(!t) throw new Error('回應中沒有文字內容');
+        return t;
+      };
+    } else if(provider === 'openai'){
+      url = 'https://api.openai.com/v1/chat/completions';
+      headers = {'content-type':'application/json','authorization':'Bearer ' + apiKey};
+      body = {model: model, messages: [{role:'user', content: prompt}]};
+      extract = function(d){
+        var t = d.choices && d.choices[0] && d.choices[0].message && d.choices[0].message.content;
+        if(!t) throw new Error('回應中沒有文字內容');
+        return t;
+      };
+    } else if(provider === 'gemini'){
+      url = 'https://generativelanguage.googleapis.com/v1beta/models/' + encodeURIComponent(model) + ':generateContent';
+      headers = {'content-type':'application/json','x-goog-api-key':apiKey};
+      body = {contents: [{parts: [{text: prompt}]}]};
+      extract = function(d){
+        var parts = (d.candidates && d.candidates[0] && d.candidates[0].content && d.candidates[0].content.parts) || [];
+        var t = parts.map(function(p){ return p.text || ''; }).join('');
+        if(!t) throw new Error('回應中沒有文字內容');
+        return t;
+      };
+    } else if(provider === 'openrouter'){
+      url = 'https://openrouter.ai/api/v1/chat/completions';
+      headers = {'content-type':'application/json','authorization':'Bearer ' + apiKey};
+      body = {model: model, messages: [{role:'user', content: prompt}]};
+      extract = function(d){
+        var t = d.choices && d.choices[0] && d.choices[0].message && d.choices[0].message.content;
+        if(!t) throw new Error('回應中沒有文字內容');
+        return t;
+      };
+    } else {
+      throw new Error('不支援的服務商');
+    }
+    var RETRYABLE = {429:1, 500:1, 503:1, 529:1};
+    var MAX_TRIES = 3;
+    for(var attempt = 1; attempt <= MAX_TRIES; attempt++){
+      var resp = await fetch(url, {method:'POST', headers:headers, body:JSON.stringify(body), signal: AbortSignal.timeout(180000)});
+      var raw = await resp.text();
+      if(resp.ok) return extract(JSON.parse(raw));
+      var msg = raw.slice(0, 300);
+      try{ var err = JSON.parse(raw); msg = (err.error && err.error.message) || err.message || msg; }catch(e){}
+      if(RETRYABLE[resp.status] && attempt < MAX_TRIES){
+        var waitSec = attempt * 8;
+        if(onRetry) onRetry(attempt, resp.status, waitSec);
+        await new Promise(function(r){ setTimeout(r, waitSec * 1000); });
+        continue;
+      }
+      if(resp.status === 404) msg += '——這通常表示模型名稱錯誤或已停用，請確認目前可用的模型 ID';
+      if(RETRYABLE[resp.status]) msg += '——已自動重試 ' + (MAX_TRIES - 1) + ' 次仍失敗，多為服務商暫時過載，請稍候再試或更換模型／服務商';
+      throw new Error('API 回應 ' + resp.status + '：' + msg);
+    }
+  }
+
+  function extractJsonObject(text){
+    var cleaned = text.replace(/```json|```/g, '');
+    var start = cleaned.indexOf('{');
+    var end = cleaned.lastIndexOf('}');
+    if(start < 0 || end <= start) throw new Error('模型輸出中找不到 JSON 物件：' + text.slice(0, 120));
+    return JSON.parse(cleaned.slice(start, end + 1));
+  }
+
+  /* ---------- 產生流程 ---------- */
+  $('generateBtn').addEventListener('click', async function(){
+    var topic = $('topicInput').value.trim();
+    var tone = $('toneSelect').value;
+    var platforms = selectedPlatforms();
+    var report = $('genReport');
+
+    if(!topic){ report.innerHTML = '<div class="bad">請先輸入主題／方向／內容</div>'; return; }
+    if(!platforms.length){ report.innerHTML = '<div class="bad">請至少勾選一個發布平台</div>'; return; }
+
+    var apiKey = $('aiKey').value.trim();
+    var provider = $('aiProvider').value;
+    var model = $('aiModel').value.trim();
+    persistApiConfig();
+
+    var btn = this;
+    btn.disabled = true;
+    var results = {};
+
+    if(apiKey){
+      report.innerHTML = '<div class="ok">呼叫 ' + AI_PROVIDERS[provider].label + '（' + escapeHtml(model) + '）產生中，請稍候…</div>';
+      try{
+        var text = await callLLM(provider, model, apiKey, buildAiPrompt(topic, tone, platforms), function(attempt, status, waitSec){
+          report.innerHTML = '<div class="warn">API 回應 ' + status + '（服務商暫時過載／限流），' + waitSec + ' 秒後自動重試（第 ' + attempt + '／2 次）…</div>';
+        });
+        var parsed = extractJsonObject(text);
+        var missing = [];
+        platforms.forEach(function(k){
+          if(typeof parsed[k] === 'string' && parsed[k].trim()){
+            results[k] = parsed[k].trim();
+          } else {
+            results[k] = ruleBasedGenerate(topic, tone, k);
+            missing.push(PLATFORM_SPECS[k].label);
+          }
+        });
+        report.innerHTML = '<div class="ok">已依 ' + platforms.length + ' 個平台產生優化文案，請檢查後再發布或複製使用。</div>'
+          + (missing.length ? '<div class="warn">' + missing.join('、') + ' 未取得 AI 結果，已改用規則式引擎產生。</div>' : '');
+      }catch(err){
+        var msg = err.name === 'TimeoutError' ? '請求逾時（180秒）' : err.message;
+        report.innerHTML = '<div class="bad">AI 產生失敗：' + escapeHtml(msg) + '，已全部改用規則式引擎產生。</div>';
+        platforms.forEach(function(k){ results[k] = ruleBasedGenerate(topic, tone, k); });
+      }
+    } else {
+      platforms.forEach(function(k){ results[k] = ruleBasedGenerate(topic, tone, k); });
+      report.innerHTML = '<div class="warn">未填 API 金鑰，已使用規則式引擎產生基本優化文案（字數截斷＋關鍵詞 hashtag）。</div>';
+    }
+
+    renderResults(platforms, results);
+    btn.disabled = false;
+  });
+
+  /* ---------- 結果卡片渲染 ---------- */
+  function charMeterHtml(len, limit){
+    var over = len > limit;
+    return '<span class="meter' + (over ? ' over' : '') + '"><b class="cur">' + len + '</b> / ' + limit + ' 字' + (over ? '　超過上限' : '') + '</span>';
+  }
+
+  function renderResults(platforms, results){
+    var grid = $('resultsGrid');
+    var html = platforms.map(function(k){
+      var spec = PLATFORM_SPECS[k];
+      var text = results[k] || '';
+      var isFb = k === 'facebook';
+      return '<div class="card result-card" data-platform="' + k + '">'
+        + '<div class="result-head">'
+        + '<div class="result-title" data-platform="' + k + '"><span class="swatch"></span>' + spec.label + '</div>'
+        + '<span class="char-meter" data-limit="' + spec.charLimit + '">' + charMeterHtml(text.length, spec.charLimit) + '</span>'
+        + '</div>'
+        + '<textarea class="result-text" data-platform="' + k + '" data-limit="' + spec.charLimit + '">' + escapeHtml(text) + '</textarea>'
+        + '<div class="result-actions">'
+        + (isFb ? '' : '<button type="button" class="btn copy-btn" data-platform="' + k + '">複製文字</button>')
+        + '</div>'
+        + (isFb ? fbPanelHtml() : '')
+        + '</div>';
+    }).join('');
+    grid.innerHTML = html;
+
+    grid.querySelectorAll('.result-text').forEach(function(ta){
+      ta.addEventListener('input', function(){
+        var limit = parseInt(ta.getAttribute('data-limit'), 10);
+        var meterEl = ta.closest('.result-card').querySelector('.char-meter');
+        meterEl.innerHTML = charMeterHtml(ta.value.length, limit);
+      });
+    });
+    grid.querySelectorAll('.copy-btn').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        var ta = btn.closest('.result-card').querySelector('.result-text');
+        copyText(ta.value);
+      });
+    });
+
+    if(results.facebook !== undefined) initFbPanel();
+  }
+
+  function copyText(text){
+    if(!text){ showToast('沒有內容可以複製'); return; }
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(text).then(function(){ showToast('已複製到剪貼簿'); }).catch(function(){ fallbackCopy(text); });
+    } else { fallbackCopy(text); }
+  }
+  function fallbackCopy(text){
+    var ta = document.createElement('textarea');
+    ta.value = text; ta.style.position = 'fixed'; ta.style.left = '-9999px';
+    document.body.appendChild(ta); ta.select();
+    try{ document.execCommand('copy'); showToast('已複製到剪貼簿'); }
+    catch(e){ showToast('複製失敗，請手動選取文字'); }
+    document.body.removeChild(ta);
+  }
+
+  /* ---------- Facebook 發布 ---------- */
+  var FB_CONFIG_KEY = 'socialpostFbConfig';
+  var fbSdkLoaded = false;
+  var fbUserToken = null;
+  var fbPages = [];
+
+  function loadFbConfig(){
+    try{ return JSON.parse(localStorage.getItem(FB_CONFIG_KEY)) || {}; }catch(e){ return {}; }
+  }
+  function persistFbConfig(appId, pageId){
+    try{
+      var cfg = loadFbConfig();
+      if(appId !== undefined) cfg.appId = appId;
+      if(pageId !== undefined) cfg.pageId = pageId;
+      localStorage.setItem(FB_CONFIG_KEY, JSON.stringify(cfg));
+    }catch(e){}
+  }
+
+  function fbPanelHtml(){
+    var cfg = loadFbConfig();
+    return '<div class="fb-panel">'
+      + '<label class="field-label" for="fbAppId">Facebook App ID</label>'
+      + '<input type="text" id="fbAppId" placeholder="貼上你已申請的 Facebook App ID" value="' + escapeHtml(cfg.appId || '') + '">'
+      + '<div class="result-actions">'
+      + '<button type="button" class="btn" id="fbConnectBtn">登入 Facebook</button>'
+      + '<select id="fbPageSelect" style="display:none;flex:1;min-width:160px;"></select>'
+      + '<button type="button" class="btn primary" id="fbPublishBtn" disabled>發布到 Facebook</button>'
+      + '</div>'
+      + '<div class="fb-status" id="fbStatus"></div>'
+      + '</div>';
+  }
+
+  function showFbStatus(msg, kind){
+    var el = $('fbStatus');
+    if(!el) return;
+    el.className = 'fb-status' + (kind ? ' ' + kind : '');
+    el.textContent = msg;
+  }
+
+  function loadFbSdk(appId){
+    return new Promise(function(resolve, reject){
+      if(fbSdkLoaded && window.FB){
+        try{ FB.init({appId: appId, cookie:true, xfbml:false, version:'v21.0'}); }catch(e){}
+        resolve(); return;
+      }
+      window.fbAsyncInit = function(){
+        FB.init({appId: appId, cookie:true, xfbml:false, version:'v21.0'});
+        fbSdkLoaded = true;
+        resolve();
+      };
+      var js = document.createElement('script');
+      js.src = 'https://connect.facebook.net/zh_TW/sdk.js';
+      js.async = true; js.defer = true;
+      js.onerror = function(){ reject(new Error('無法載入 Facebook SDK，請檢查網路連線')); };
+      document.body.appendChild(js);
+    });
+  }
+
+  function initFbPanel(){
+    var connectBtn = $('fbConnectBtn');
+    var publishBtn = $('fbPublishBtn');
+    if(!connectBtn) return;
+
+    connectBtn.addEventListener('click', async function(){
+      var appId = $('fbAppId').value.trim();
+      if(!appId){ showFbStatus('請先填入 Facebook App ID', 'bad'); return; }
+      persistFbConfig(appId, undefined);
+      connectBtn.disabled = true;
+      showFbStatus('載入 Facebook SDK 中…');
+      try{
+        await loadFbSdk(appId);
+        FB.login(function(resp){
+          connectBtn.disabled = false;
+          if(resp.authResponse){
+            fbUserToken = resp.authResponse.accessToken;
+            showFbStatus('登入成功，正在取得粉專清單…', 'ok');
+            loadPages();
+          } else {
+            showFbStatus('登入取消或未授權，請確認你的 Facebook 帳號有粉專管理權限', 'bad');
+          }
+        }, {scope:'pages_show_list,pages_manage_posts,pages_read_engagement'});
+      }catch(err){
+        connectBtn.disabled = false;
+        showFbStatus(err.message, 'bad');
+      }
+    });
+
+    publishBtn.addEventListener('click', publishToFacebook);
+  }
+
+  function loadPages(){
+    FB.api('/me/accounts', function(resp){
+      if(!resp || resp.error){
+        showFbStatus('取得粉專清單失敗：' + (resp && resp.error && resp.error.message || '未知錯誤'), 'bad');
+        return;
+      }
+      fbPages = resp.data || [];
+      var sel = $('fbPageSelect');
+      if(!fbPages.length){
+        showFbStatus('這個帳號沒有可管理的粉專，請確認登入的帳號權限', 'bad');
+        return;
+      }
+      var cfg = loadFbConfig();
+      sel.innerHTML = fbPages.map(function(p){ return '<option value="' + p.id + '">' + escapeHtml(p.name) + '</option>'; }).join('');
+      if(cfg.pageId && fbPages.some(function(p){ return p.id === cfg.pageId; })) sel.value = cfg.pageId;
+      sel.style.display = '';
+      sel.addEventListener('change', function(){ persistFbConfig(undefined, sel.value); });
+      persistFbConfig(undefined, sel.value);
+      $('fbPublishBtn').disabled = false;
+      showFbStatus('已登入，選好粉專後按「發布到 Facebook」', 'ok');
+    });
+  }
+
+  async function graphFetch(path, formData){
+    var resp = await fetch('https://graph.facebook.com/v21.0' + path, {method:'POST', body:formData});
+    var data = await resp.json();
+    if(data.error) throw new Error(data.error.message || 'Graph API 錯誤');
+    return data;
+  }
+
+  async function fbPostText(page, message){
+    var fd = new FormData();
+    fd.append('message', message);
+    fd.append('access_token', page.access_token);
+    return graphFetch('/' + page.id + '/feed', fd);
+  }
+  async function fbUploadSinglePhoto(page, caption, file){
+    var fd = new FormData();
+    fd.append('source', file);
+    fd.append('caption', caption);
+    fd.append('access_token', page.access_token);
+    return graphFetch('/' + page.id + '/photos', fd);
+  }
+  async function fbUploadMultiPhoto(page, message, files){
+    var ids = [];
+    for(var i = 0; i < files.length; i++){
+      var fd = new FormData();
+      fd.append('source', files[i]);
+      fd.append('published', 'false');
+      fd.append('access_token', page.access_token);
+      var r = await graphFetch('/' + page.id + '/photos', fd);
+      ids.push(r.id);
+    }
+    var fd2 = new FormData();
+    fd2.append('message', message);
+    ids.forEach(function(id, idx){
+      fd2.append('attached_media[' + idx + ']', JSON.stringify({media_fbid: id}));
+    });
+    fd2.append('access_token', page.access_token);
+    return graphFetch('/' + page.id + '/feed', fd2);
+  }
+  async function fbUploadVideo(page, description, file){
+    var fd = new FormData();
+    fd.append('source', file);
+    fd.append('description', description);
+    fd.append('access_token', page.access_token);
+    return graphFetch('/' + page.id + '/videos', fd);
+  }
+
+  async function publishToFacebook(){
+    var page = fbPages.find(function(p){ return p.id === $('fbPageSelect').value; });
+    if(!page){ showFbStatus('請先登入並選擇粉專', 'bad'); return; }
+    var ta = document.querySelector('.result-card[data-platform="facebook"] .result-text');
+    var text = ta.value.trim();
+    if(!text){ showFbStatus('貼文內容是空的，請先產生或輸入文字', 'bad'); return; }
+    if(!confirm('確定要發布到粉專「' + page.name + '」嗎？發布後將公開可見，此動作無法復原。')) return;
+
+    var publishBtn = $('fbPublishBtn');
+    publishBtn.disabled = true;
+    showFbStatus('發布中，請稍候…');
+    try{
+      var result;
+      if(mediaState.video){
+        result = await fbUploadVideo(page, text, mediaState.video.file);
+      } else if(mediaState.images.length === 1){
+        result = await fbUploadSinglePhoto(page, text, mediaState.images[0].file);
+      } else if(mediaState.images.length > 1){
+        result = await fbUploadMultiPhoto(page, text, mediaState.images.map(function(i){ return i.file; }));
+      } else {
+        result = await fbPostText(page, text);
+      }
+      showFbStatus('發布成功！ID：' + (result.post_id || result.id), 'ok');
+      showToast('已發布到 Facebook');
+    }catch(err){
+      showFbStatus('發布失敗：' + err.message, 'bad');
+    }finally{
+      publishBtn.disabled = false;
+    }
+  }
+
+  /* ---------- 草稿持久化 ---------- */
+  var DRAFT_KEY = 'socialpostDraft';
+  function saveDraft(){
+    try{
+      localStorage.setItem(DRAFT_KEY, JSON.stringify({
+        topic: $('topicInput').value,
+        tone: $('toneSelect').value,
+        platforms: selectedPlatforms()
+      }));
+    }catch(e){}
+  }
+  function loadDraft(){
+    try{
+      var raw = localStorage.getItem(DRAFT_KEY);
+      if(!raw) return;
+      var d = JSON.parse(raw);
+      if(d.topic) $('topicInput').value = d.topic;
+      if(d.tone) $('toneSelect').value = d.tone;
+      if(d.platforms){
+        document.querySelectorAll('.platform-check input').forEach(function(el){
+          el.checked = d.platforms.indexOf(el.value) >= 0;
+        });
+      }
+    }catch(e){}
+  }
+  $('topicInput').addEventListener('input', saveDraft);
+  $('toneSelect').addEventListener('change', saveDraft);
+  document.querySelectorAll('.platform-check input').forEach(function(el){ el.addEventListener('change', saveDraft); });
+
+  loadDraft();
+  initAiPanel();
+})();
+</script>
+
+</body>
+</html>

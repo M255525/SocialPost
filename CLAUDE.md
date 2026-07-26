@@ -1,0 +1,50 @@
+# CLAUDE.md — SocialPost（社群貼文產生器）
+
+單檔前端工具：輸入主題／方向／內容 → 依 Facebook／Instagram／X／Threads 各平台的字數上限與語氣慣例產生優化貼文文案 → Facebook 可直接登入帳號自動發布（文字／圖片／影片），其餘三個平台複製文字後手動貼上發布。無建置步驟、無框架、無 package.json，直接開啟 `index.html`（`file://`）或以靜態伺服器託管即可。
+
+`manual.html` 是操作手冊，含 Facebook App 串接前置條件說明、AI 金鑰設定步驟、隱私說明、使用警語與創作者資料。創作者經歷內容與 `Prompt/manual.html`、`sbir-generator/manual.html`、`icap-generator/manual.html`、`phoenix-loan-generator/manual.html` 為同一份，更新其中一邊時同步其餘各邊。
+
+## 範圍界定（重要，勿隨意擴大）
+
+- **只有 Facebook 做真正的自動發布**（透過官方 Facebook JS SDK 登入＋Graph API）。Instagram／X／Threads 只做 AI 文案優化＋媒體預覽＋複製文字，**不做這三個平台的 API 串接**——IG 需透過 FB Graph API 的 Instagram Business 帳號、X／Threads 是完全不同的 API 與審核流程，複雜度留待未來視需求擴充，不要在沒有明確需求下主動加上。
+- Facebook 串接假設使用者**已經有**自己的 Facebook 開發者帳號、App、與粉專管理權限——`manual.html` 只說明「怎麼把已有的 App ID 接上本工具」，不寫「如何申請開發者帳號」的完整教學。
+
+## 架構
+
+單一 `index.html`：內嵌 `<style>` 與 `<script>`，IIFE 包裝，無外部資源除了選用的 AI API fetch 與選用的 Facebook JS SDK（`https://connect.facebook.net/zh_TW/sdk.js`，只有使用者按下「登入 Facebook」時才動態載入）。
+
+- **`PLATFORM_SPECS`**：四平台的字數上限（`charLimit`）、建議字數（`sweet`）、hashtag 建議數量與說明、語氣要求，同時驅動 AI prompt 組合（`buildAiPrompt()`）與規則式 fallback（`ruleBasedGenerate()`）。新增/調整平台規則只需改這個表。
+- **貼文素材**：主題 textarea、語氣下拉（`TONE_TEMPLATES`：親切口語／專業正式／促購優惠／正式公告）、平台複選（`.platform-check`）、圖片多選上傳（`FileReader.readAsDataURL` 產生縮圖，`mediaState.images` 陣列）、影片單一上傳（`URL.createObjectURL` 餵 `<video>` 預覽，`mediaState.video`）。素材與草稿（主題/語氣/平台勾選）存 `localStorage`（key: `socialpostDraft`），重整頁面可恢復。
+- **AI 優化引擎（選用，比照 `Prompt/index.html`／`sbir-generator` 既有模式，修改時互相參照）**：`AI_PROVIDERS`（Claude/OpenAI/Gemini/OpenRouter）、`callLLM()`（含 Claude 的 `anthropic-dangerous-direct-browser-access` header、429/500/503/529 重試、180 秒逾時）、`extractJsonObject()` 皆為同一套實作。差異點：`buildAiPrompt()` 依 `PLATFORM_SPECS` 與使用者勾選的平台组一份「請針對這幾個平台各自產生完整貼文全文（含 hashtag）」的 prompt，要求回傳 `{platformKey: "完整貼文文字", ...}` 的 JSON，只含勾選的平台。設定存 `localStorage`（key: `socialpostApiConfig`）。
+- **規則式 fallback（`ruleBasedGenerate()`）**：沒有 API 金鑰時使用，不連網。用 `TONE_TEMPLATES` 加上開頭/結尾語＋原文，`extractHashtags()` 用停用詞表從主題文字挑關鍵詞組 hashtag，超過平台字數上限就截斷。AI 呼叫失敗或某平台未取得有效結果時，也會**單獨對該平台**退回這個 fallback（見 `generateBtn` click handler 裡的 `missing` 邏輯），不會整批失敗。
+- **結果卡片（`renderResults()`）**：每個勾選平台一張 `.result-card`（左側邊框色對應該平台品牌色），文字框可編輯（`hashtag` 直接併入同一段可編輯文字，不是分開欄位，方便發布/複製時就是完整貼文全文），即時字數計量對照該平台上限（超過會標紅）。非 Facebook 卡片有「複製文字」按鈕（`navigator.clipboard.writeText`，不支援時退回 `document.execCommand('copy')`）。
+- **Facebook 發布**（`fbPanelHtml()` / `initFbPanel()` / `publishToFacebook()`）：
+  - App ID 輸入框存 `localStorage`（key: `socialpostFbConfig`，含 `appId` 與上次選擇的 `pageId`）。
+  - `loadFbSdk()` 動態插入 SDK `<script>`，`window.fbAsyncInit` 內 `FB.init({appId, version:'v21.0'})`——**刻意延後到使用者填好 App ID 並按下「登入 Facebook」才載入**，因為 App ID 是使用者輸入值、頁面載入當下未知。
+  - 登入走 `FB.login(cb, {scope:'pages_show_list,pages_manage_posts,pages_read_engagement'})`；成功後 `FB.api('/me/accounts', cb)` 取得使用者管理的粉專清單（含各粉專自己的 `access_token`），下拉選單選定後存 `pageId`。
+  - **實際發布呼叫改用 `fetch` + `FormData` 直接打 `graph.facebook.com`（`graphFetch()`），不是 `FB.api()`**——這是刻意的選擇：Graph API 的寫入端點對純 `fetch`/`FormData` 上傳（`access_token` 隨表單欄位送出）有良好支援，比起讓 SDK 的 `FB.api()` 處理瀏覽器 `File` 物件的多媒體上傳更可預期。四種發布路徑：純文字 `/feed`、單圖 `/photos`、多圖（先各自 `published=false` 上傳取得 photo id，再用 `attached_media[i]` 組 `/feed`）、影片 `/videos`。
+  - **發布前一定 `confirm()` 二次確認**（會影響真實外部系統的不可逆動作）。
+  - **已知風險 / 尚待實測**：本專案建置時沒有真實 Facebook App／粉專可供端對端測試，四種 Graph API 發布路徑是依官方文件實作、未經實機驗證。第一次接上真實 App ID 時，建議依序測試「純文字」→「單張圖片」→「多張圖片」→「影片」，若 CORS 或參數格式有出入，優先檢查 `graphFetch()` 的錯誤訊息（`data.error.message`）與 Graph API 版本號（目前寫死 `v21.0`，官方棄用舊版後需要更新）。
+
+## 隱私與警語
+
+無自建後端、無資料上傳到本工具以外的伺服器。AI 金鑰、Facebook App ID／登入權杖、貼文草稿都只存在使用者瀏覽器的 `localStorage`。首頁與手冊皆明列使用警語：Facebook 發布是公開且不可復原的動作、請勿輸入真實個資或機密資料、僅供教學與個人使用禁止商業化。修改功能時這些警語需一併檢視是否仍準確。
+
+## 指令
+
+無建置/測試指令。修改 `index.html` 或 `manual.html` 後用瀏覽器開啟驗證，或 `python -m http.server 8778 --directory SocialPost` 暫起伺服器測完關閉。用 Preview MCP 驗證時，`preview_eval` 讀 DOM／觸發事件比截圖可靠（與工作區其他單檔工具已知的截圖偶發逾時問題相同）。
+
+### 桌面版 exe（尚未打包）
+
+比照 `phoenix-loan-generator/launcher.py` 的模式，`launcher.py` 已就緒（固定 **8778 埠**——工作區埠號分配：8765 ai-course-hub、8766 video-editor、8767 fruit-ninja-cam、8770 phoenix-loan exe、8771 icap exe、8772 sbir exe、8773 ai-video-studio、8774 ai-video-studio 桌面版 exe、8775 IPA_Kano dashboard exe、8776 Dashboard、8777 Prompt exe、**8778 本專案**、8779 sbir-gen-s、8780 icap_s、8781 aivideo-studio-s）。需要打包時，比照以下指令（PowerShell、絕對路徑）：
+
+```powershell
+$proj = "C:\Users\mark_\AI Test\SocialPost"
+cd $proj
+python -m PyInstaller --onefile --console --name SocialPostGenerator `
+  --distpath "$proj\socialpost" --workpath "$env:TEMP\pyi-build-socialpost" --specpath "$env:TEMP" `
+  --add-data "$proj\index.html;." --add-data "$proj\manual.html;." `
+  launcher.py
+```
+
+exe 未簽章，首次執行會遇 SmartScreen 警告；新建置的二進位檔可能被 Smart App Control 暫時封鎖數小時（雲端信譽尚未建立），詳見全域記憶 `windows-smart-app-control-dll-blocks`，不要建議使用者關閉 Smart App Control。**若之後要打包，App ID 對應的 Facebook App 需把「應用程式網域」與「有效的 OAuth 重新導向 URI」設定為 `http://127.0.0.1:8778`（固定埠號的原因之一，也是為了讓 Facebook 登入的網域白名單不用每次調整）。**
