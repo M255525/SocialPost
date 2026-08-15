@@ -15,6 +15,7 @@
 
 - **`PLATFORM_SPECS`**：四平台的字數上限（`charLimit`）、建議字數（`sweet`）、hashtag 建議數量與說明、語氣要求，同時驅動 AI prompt 組合（`buildAiPrompt()`）與規則式 fallback（`ruleBasedGenerate()`）。新增/調整平台規則只需改這個表。
 - **貼文素材**：主題 textarea、語氣下拉（`TONE_TEMPLATES`：親切口語／專業正式／促購優惠／正式公告）、平台複選（`.platform-check`）、圖片多選上傳（`FileReader.readAsDataURL` 產生縮圖，`mediaState.images` 陣列）、影片單一上傳（`URL.createObjectURL` 餵 `<video>` 預覽，`mediaState.video`）。素材與草稿（主題/語氣/平台勾選）存 `localStorage`（key: `socialpostDraft`），重整頁面可恢復。
+- **內建範例（`EXAMPLES`，2026-08-15 新增）**：5 組**完全虛構**的中小企業情境（咖啡店週末優惠／瑜伽教室招生／手作甜點新品／寵物店颱風公休公告／選物店年中特賣），涵蓋四種語氣與不同平台組合，比照 `Prompt`／`sbir-generator` 既有範例模式。主題輸入框下方一排藥丸狀按鈕（`initExamples()`），點下去直接帶入 `topic`／`tone`／平台勾選並存草稿；若輸入框已有內容會先 `confirm()` 詢問是否覆蓋（跟「套用範例」慣例一致）。
 - **AI 優化引擎（選用，比照 `Prompt/index.html`／`sbir-generator` 既有模式，修改時互相參照）**：`AI_PROVIDERS`（Claude/OpenAI/Gemini/OpenRouter）、`callLLM()`（含 Claude 的 `anthropic-dangerous-direct-browser-access` header、429/500/503/529 重試、180 秒逾時）、`extractJsonObject()` 皆為同一套實作。差異點：`buildAiPrompt()` 依 `PLATFORM_SPECS` 與使用者勾選的平台组一份「請針對這幾個平台各自產生完整貼文全文（含 hashtag）」的 prompt，要求回傳 `{platformKey: "完整貼文文字", ...}` 的 JSON，只含勾選的平台。設定存 `localStorage`（key: `socialpostApiConfig`）。
 - **規則式 fallback（`ruleBasedGenerate()`）**：沒有 API 金鑰時使用，不連網。用 `TONE_TEMPLATES` 加上開頭/結尾語＋原文，`extractHashtags()` 用停用詞表從主題文字挑關鍵詞組 hashtag，超過平台字數上限就截斷。AI 呼叫失敗或某平台未取得有效結果時，也會**單獨對該平台**退回這個 fallback（見 `generateBtn` click handler 裡的 `missing` 邏輯），不會整批失敗。
 - **結果卡片（`renderResults()`）**：每個勾選平台一張 `.result-card`（左側邊框色對應該平台品牌色），文字框可編輯（`hashtag` 直接併入同一段可編輯文字，不是分開欄位，方便發布/複製時就是完整貼文全文），即時字數計量對照該平台上限（超過會標紅）。非 Facebook 卡片有「複製文字」按鈕（`navigator.clipboard.writeText`，不支援時退回 `document.execCommand('copy')`）。
@@ -39,7 +40,7 @@
 比照 `phoenix-loan-generator/launcher.py` 的模式，`launcher.py` 已就緒（固定 **8778 埠**——工作區埠號分配：8765 ai-course-hub、8766 video-editor、8767 fruit-ninja-cam、8770 phoenix-loan exe、8771 icap exe、8772 sbir exe、8773 ai-video-studio、8774 ai-video-studio 桌面版 exe、8775 IPA_Kano dashboard exe、8776 Dashboard、8777 Prompt exe、**8778 本專案**、8779 sbir-gen-s、8780 icap_s、8781 aivideo-studio-s）。需要打包時，比照以下指令（PowerShell、絕對路徑）：
 
 ```powershell
-$proj = "C:\Users\mark_\AI Test\SocialPost"
+$proj = "C:\Users\mark_\AI Test\行銷內容工具\SocialPost"
 cd $proj
 python -m PyInstaller --onefile --console --name SocialPostGenerator `
   --distpath "$proj\socialpost" --workpath "$env:TEMP\pyi-build-socialpost" --specpath "$env:TEMP" `

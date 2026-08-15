@@ -106,6 +106,14 @@
   .row{display:flex;gap:14px;flex-wrap:wrap;margin-top:14px;}
   .row > div{flex:1;min-width:180px;}
 
+  .example-row{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;}
+  .example-btn{
+    font-family:var(--font-sans);font-size:12.5px;
+    background:var(--bg-alt);color:var(--text-dim);border:1px solid var(--line);
+    padding:7px 13px;border-radius:999px;cursor:pointer;transition:.15s;
+  }
+  .example-btn:hover{border-color:var(--violet);color:var(--violet);}
+
   .platform-grid{display:flex;flex-wrap:wrap;gap:10px;margin-top:10px;}
   .platform-check{
     display:flex;align-items:center;gap:8px;
@@ -227,6 +235,9 @@
     <label class="field-label" for="topicInput">主題／方向／內容</label>
     <textarea id="topicInput" placeholder="例：週末快閃優惠，全館滿千折百，只到週日晚上12點截止"></textarea>
 
+    <label class="field-label" style="margin-top:14px;">範例（點一下直接帶入，皆為虛構情境）</label>
+    <div class="example-row" id="exampleRow"></div>
+
     <div class="row">
       <div>
         <label class="field-label" for="toneSelect">語氣</label>
@@ -328,6 +339,67 @@
     announcement: { lead:'公告通知：', closing:'詳情請見以下說明。' }
   };
   var TONE_LABELS = { friendly:'親切口語', professional:'專業正式', promo:'促購優惠', announcement:'正式公告' };
+
+  /* ---------- 內建範例（皆為虛構情境，供快速上手） ---------- */
+  var EXAMPLES = [
+    {
+      key: 'cafe',
+      label: '☕ 咖啡店週末優惠',
+      topic: '本週六日限定，凡點任一杯手沖咖啡即贈自家烘焙餅乾一份，內用外帶皆適用，數量有限每日限量50份，售完為止。地點在「拾光咖啡」信義店。',
+      tone: 'promo',
+      platforms: ['facebook', 'instagram']
+    },
+    {
+      key: 'yoga',
+      label: '🧘 瑜伽教室招生',
+      topic: '「心境瑜伽」全新初階哈達瑜伽班即將開課，適合完全沒有經驗的新手，共8堂課，每週二四晚上7點，小班制最多8人，即日起開放報名，前5名報名再送一堂體驗課。',
+      tone: 'friendly',
+      platforms: ['facebook', 'instagram', 'threads']
+    },
+    {
+      key: 'dessert',
+      label: '🍰 手作甜點新品',
+      topic: '手作甜點工作室「甜點時光」本月推出新品——芒果生乳酪蛋白霜塔，選用屏東愛文芒果，酸甜比例剛好，每天限量20顆，可線上預訂隔日取貨。',
+      tone: 'friendly',
+      platforms: ['instagram', 'threads']
+    },
+    {
+      key: 'petgroom',
+      label: '🐾 寵物店颱風公休',
+      topic: '因應颱風來襲，「毛孩子寵物美容」明日（週五）暫停營業一天，已預約的顧客將由專人主動聯繫改期，造成不便敬請見諒，請大家做好防颱準備、注意自身與寵物安全。',
+      tone: 'announcement',
+      platforms: ['facebook', 'x', 'threads']
+    },
+    {
+      key: 'shop',
+      label: '🛍️ 選物店年中特賣',
+      topic: '「拾物選物店」年中特賣正式開跑，即日起至月底，全館服飾配件85折，滿2000元再折200，會員另有加碼贈品，歡迎至門市或線上商城選購。',
+      tone: 'promo',
+      platforms: ['facebook', 'instagram', 'x']
+    }
+  ];
+
+  function initExamples(){
+    var row = $('exampleRow');
+    row.innerHTML = EXAMPLES.map(function(ex){
+      return '<button type="button" class="example-btn" data-key="' + ex.key + '">' + ex.label + '</button>';
+    }).join('');
+    row.addEventListener('click', function(e){
+      var btn = e.target.closest('.example-btn');
+      if(!btn) return;
+      var ex = EXAMPLES.find(function(x){ return x.key === btn.getAttribute('data-key'); });
+      if(!ex) return;
+      var hasContent = $('topicInput').value.trim();
+      if(hasContent && !confirm('套用範例會覆蓋目前已輸入的內容，確定要繼續嗎？')) return;
+      $('topicInput').value = ex.topic;
+      $('toneSelect').value = ex.tone;
+      document.querySelectorAll('.platform-check input').forEach(function(el){
+        el.checked = ex.platforms.indexOf(el.value) >= 0;
+      });
+      saveDraft();
+      showToast('已套用範例：' + ex.label);
+    });
+  }
 
   /* ---------- 平台勾選 ---------- */
   function selectedPlatforms(){
@@ -868,6 +940,7 @@
 
   loadDraft();
   initAiPanel();
+  initExamples();
 })();
 </script>
 
