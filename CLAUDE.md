@@ -19,6 +19,7 @@
 - **AI 優化引擎（選用，比照 `Prompt/index.html`／`sbir-generator` 既有模式，修改時互相參照）**：`AI_PROVIDERS`（Claude/OpenAI/Gemini/OpenRouter）、`callLLM()`（含 Claude 的 `anthropic-dangerous-direct-browser-access` header、429/500/503/529 重試、180 秒逾時）、`extractJsonObject()` 皆為同一套實作。差異點：`buildAiPrompt()` 依 `PLATFORM_SPECS` 與使用者勾選的平台组一份「請針對這幾個平台各自產生完整貼文全文（含 hashtag）」的 prompt，要求回傳 `{platformKey: "完整貼文文字", ...}` 的 JSON，只含勾選的平台。設定存 `localStorage`（key: `socialpostApiConfig`）。
 - **規則式 fallback（`ruleBasedGenerate()`）**：沒有 API 金鑰時使用，不連網。用 `TONE_TEMPLATES` 加上開頭/結尾語＋原文，`extractHashtags()` 用停用詞表從主題文字挑關鍵詞組 hashtag，超過平台字數上限就截斷。AI 呼叫失敗或某平台未取得有效結果時，也會**單獨對該平台**退回這個 fallback（見 `generateBtn` click handler 裡的 `missing` 邏輯），不會整批失敗。
 - **結果卡片（`renderResults()`）**：每個勾選平台一張 `.result-card`（左側邊框色對應該平台品牌色），文字框可編輯（`hashtag` 直接併入同一段可編輯文字，不是分開欄位，方便發布/複製時就是完整貼文全文），即時字數計量對照該平台上限（超過會標紅）。非 Facebook 卡片有「複製文字」按鈕（`navigator.clipboard.writeText`，不支援時退回 `document.execCommand('copy')`）。
+- **一鍵複製全部（`#copyAllBtn`，2026-08-15 新增）**：卡片 2 標題列右側按鈕，點下去把 `#resultsGrid` 內目前**所有**已產生平台的卡片（讀 `.result-title` 當標籤、`.result-text` 當內容，即時反映使用者手動編輯過的文字，不是原始產生結果的快照）以「【平台名稱】\n內容」格式串接、平台間空一行，一次呼叫既有的 `copyText()` 複製到剪貼簿。沒有任何結果時顯示 toast 提示、不呼叫剪貼簿 API。
 - **Facebook 發布**（`fbPanelHtml()` / `initFbPanel()` / `publishToFacebook()`）：
   - App ID 輸入框存 `localStorage`（key: `socialpostFbConfig`，含 `appId` 與上次選擇的 `pageId`）。
   - `loadFbSdk()` 動態插入 SDK `<script>`，`window.fbAsyncInit` 內 `FB.init({appId, version:'v21.0'})`——**刻意延後到使用者填好 App ID 並按下「登入 Facebook」才載入**，因為 App ID 是使用者輸入值、頁面載入當下未知。

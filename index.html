@@ -86,6 +86,7 @@
     padding:22px 24px 24px;margin-bottom:22px;
     box-shadow:inset 0 1px 0 rgba(255,255,255,0.04), 0 6px 18px rgba(0,0,0,0.25);
   }
+  .card-head{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;}
   .card h2{font-size:16px;margin:0 0 4px;display:flex;align-items:center;gap:9px;}
   .card h2 .num{
     font-family:var(--font-mono);font-size:12px;color:var(--violet);border:1px solid var(--line);
@@ -282,8 +283,11 @@
   </div>
 
   <div class="card">
-    <h2><span class="num">2</span>貼文預覽與發布</h2>
-    <p class="hint">Facebook 卡片可登入你的粉專帳號直接發布；其餘平台請用「複製文字」自行貼到該平台 App／網站。</p>
+    <div class="card-head">
+      <h2><span class="num">2</span>貼文預覽與發布</h2>
+      <button class="btn" id="copyAllBtn" type="button">📋 一鍵複製全部</button>
+    </div>
+    <p class="hint">Facebook 卡片可登入你的粉專帳號直接發布；其餘平台請用「複製文字」自行貼到該平台 App／網站；或按右上角「一鍵複製全部」把所有平台的文案一次複製到剪貼簿。</p>
     <div class="results-grid" id="resultsGrid">
       <p class="placeholder-empty">尚未產生貼文——請在上方填寫素材後按「產生優化貼文」。</p>
     </div>
@@ -704,6 +708,17 @@
 
     if(results.facebook !== undefined) initFbPanel();
   }
+
+  $('copyAllBtn').addEventListener('click', function(){
+    var cards = document.querySelectorAll('#resultsGrid .result-card');
+    if(!cards.length){ showToast('尚未產生貼文，無法複製'); return; }
+    var parts = Array.from(cards).map(function(card){
+      var label = card.querySelector('.result-title').textContent.trim();
+      var text = card.querySelector('.result-text').value;
+      return '【' + label + '】\n' + text;
+    });
+    copyText(parts.join('\n\n'));
+  });
 
   function copyText(text){
     if(!text){ showToast('沒有內容可以複製'); return; }
