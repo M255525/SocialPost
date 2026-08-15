@@ -31,6 +31,10 @@
 
 無自建後端、無資料上傳到本工具以外的伺服器。AI 金鑰、Facebook App ID／登入權杖、貼文草稿都只存在使用者瀏覽器的 `localStorage`。首頁與手冊皆明列使用警語：Facebook 發布是公開且不可復原的動作、請勿輸入真實個資或機密資料、僅供教學與個人使用禁止商業化。修改功能時這些警語需一併檢視是否仍準確。
 
+## 部署（2026-08-15）
+
+已推公開 GitHub repo：<https://github.com/M255525/SocialPost>，已開 GitHub Pages（`.github/workflows/deploy-pages.yml`，Actions 部署模式，比照 [[workspace-git-repos]] 記載的「不要用 legacy branch-source」慣例）：<https://m255525.github.io/SocialPost/>。頁尾加了訪客次數計數器（`visitor-badge.laobi.icu` 的 SVG badge，`<img>` 直接嵌入 `.footer-meta`，`page_id=m255525.socialpost`，免金鑰免後端）。`README.md` 比照 `ai-image-prompt-studio` 的既有格式撰寫。
+
 ## 指令
 
 無建置/測試指令。修改 `index.html` 或 `manual.html` 後用瀏覽器開啟驗證，或 `python -m http.server 8778 --directory SocialPost` 暫起伺服器測完關閉。用 Preview MCP 驗證時，`preview_eval` 讀 DOM／觸發事件比截圖可靠（與工作區其他單檔工具已知的截圖偶發逾時問題相同）。
