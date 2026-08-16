@@ -992,6 +992,18 @@
     return '目前瀏覽器不支援安裝，或已安裝過';
   }
 
+  // 這個 <script> 區塊是獨立 IIFE，主程式的 showToast() 是宣告在另一個 IIFE 裡、
+  // 跨區塊看不到（typeof showToast 在這裡永遠是 'undefined'），直接用同一顆
+  // #toast 元素自己實作，不依賴主程式那個函式是否存在。
+  function notify(msg) {
+    var t = document.getElementById('toast');
+    if (!t) { window.alert(msg); return; }
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(notify._timer);
+    notify._timer = setTimeout(function () { t.classList.remove('show'); }, 2400);
+  }
+
   window.addEventListener('beforeinstallprompt', function (e) {
     e.preventDefault();
     deferredPrompt = e;
@@ -1006,11 +1018,15 @@
     } else {
       btn.addEventListener('click', function () {
         if (!deferredPrompt) {
-          if (typeof showToast === 'function') showToast(fallbackMessage());
+          notify(fallbackMessage());
           return;
         }
-        deferredPrompt.prompt();
-        deferredPrompt.userChoice.then(function () { deferredPrompt = null; });
+        try {
+          deferredPrompt.prompt();
+          deferredPrompt.userChoice.then(function () { deferredPrompt = null; });
+        } catch (e) {
+          notify(fallbackMessage());
+        }
       });
     }
   }

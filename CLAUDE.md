@@ -42,6 +42,8 @@
 
 **2026-08-14 那次工作區全站 PWA 推廣時本工具被排除**（見 [[pwa-install-rollout]]：「經檢查後確認沒有 GitHub Pages 部署」），因為當時本工具尚未上線；2026-08-15 才推公開 repo＋開 GitHub Pages，補上是這之後的事。
 
+**安裝按鈕「有出現但沒反應」的 bug（2026-08-16，使用者實測回報）**：原本安裝腳本用 `if (typeof showToast === 'function') showToast(fallbackMessage());` 當 `deferredPrompt` 是 `null` 時的回饋——**但 `showToast()` 是宣告在主程式那個獨立 IIFE 裡，PWA 安裝腳本是另一個完全獨立的 `<script>` 區塊／IIFE，函式作用域不會跨區塊共享**，所以 `typeof showToast` 在安裝腳本裡永遠是 `'undefined'`，點按鈕在 `deferredPrompt` 為 `null` 的情況下（例如瀏覽器沒觸發 `beforeinstallprompt`，或已安裝過）**完全沒有任何回饋、主控台也不會報錯**，跟使用者的回報「按鈕鍵但沒有對應功能」完全吻合。修法：安裝腳本改成自己實作 `notify(msg)`（直接操作 `#toast` 這個 DOM 元素，不依賴外部函式是否存在），`deferredPrompt.prompt()` 補上 try/catch。排查時發現這是同一套安裝腳本在工作區另外兩個姊妹專案（`ai-image-prompt-studio`／`ai-prompt-generator`／`ai-music-prompt-studio`，共三個）裡也存在的系統性 bug，已一併修正，詳見 [[pwa-install-rollout]]。
+
 ## 指令
 
 無建置/測試指令。修改 `index.html` 或 `manual.html` 後用瀏覽器開啟驗證，或 `python -m http.server 8778 --directory SocialPost` 暫起伺服器測完關閉。用 Preview MCP 驗證時，`preview_eval` 讀 DOM／觸發事件比截圖可靠（與工作區其他單檔工具已知的截圖偶發逾時問題相同）。
