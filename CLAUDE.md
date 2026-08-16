@@ -28,6 +28,14 @@
   - **發布前一定 `confirm()` 二次確認**（會影響真實外部系統的不可逆動作）。
   - **已知風險 / 尚待實測**：本專案建置時沒有真實 Facebook App／粉專可供端對端測試，四種 Graph API 發布路徑是依官方文件實作、未經實機驗證。第一次接上真實 App ID 時，建議依序測試「純文字」→「單張圖片」→「多張圖片」→「影片」，若 CORS 或參數格式有出入，優先檢查 `graphFetch()` 的錯誤訊息（`data.error.message`）與 Graph API 版本號（目前寫死 `v21.0`，官方棄用舊版後需要更新）。
 
+## 頂部跑馬燈（2026-08-16 新增）
+
+`#marqueeBar` 顯示跟工作區其他工具共用同一份 Google Sheet 維護的公告內容，同一個授權伺服器 Apps Script 網址（`AKfycbwKX0.../exec`，與 `ai-video-studio`／`food-finder`／`ai-prompt-generator` 等系列共用同一顆端點）。本工具**沒有序號登入機制**，做法比照這些同樣沒有登入機制的工具：頁面載入時直接 POST 一個空序號給該網址，`doPost` 不論序號是否有效都會附上 `marquee` 陣列，前端只取這個欄位、忽略 `valid`/`reason`。`localStorage` key 為 `socialpostMarquee`。先讀快取立即顯示、再背景 fetch，每 20 分鐘重抓一次；抓取失敗靜默忽略。
+
+版面整合：`.topbar` 原本是 `position:sticky;top:0`，跑馬燈用 `position:fixed` 疊在最上面＋`body.has-marquee{padding-top:30px}` 把內容往下推，並且把 `.topbar` 的 `top` 也一併調整成 `body.has-marquee .topbar{top:30px}`（不是 `margin-top`，理由見 `shared-widget-rollout` skill：`margin-top` 只影響文件流裡的初始位置，捲動到吸頂那一刻還是會貼齊原本的 `top:0` 被蓋住）。跑馬燈文字用 `--violet` 主色（`#7c6cf5`），與本工具既有配色一致。獨立 `<script>` IIFE，跟主程式邏輯、PWA 安裝腳本互不相依。
+
+**已驗證**：Node `fetch()` 直接打共用端點確認能拿到正確的 `marquee` 陣列（**curl 直接 `-L -X POST` 這個網址會因為 302 轉址被降級成 GET 而報 411，是 curl 本身的行為，不代表端點壞掉**，測這個端點要用 `fetch()` 或瀏覽器）；Playwright 對本機靜態伺服器實際驗證跑馬燈正確顯示、`body.has-marquee`／`.topbar top:30px` 皆正確套用、無版面重疊（截圖確認）。
+
 ## 隱私與警語
 
 無自建後端、無資料上傳到本工具以外的伺服器。AI 金鑰、Facebook App ID／登入權杖、貼文草稿都只存在使用者瀏覽器的 `localStorage`。首頁與手冊皆明列使用警語：Facebook 發布是公開且不可復原的動作、請勿輸入真實個資或機密資料、僅供教學與個人使用禁止商業化。修改功能時這些警語需一併檢視是否仍準確。
