@@ -1,0 +1,16 @@
+{
+  "name": "社群貼文產生器",
+  "short_name": "SocialPost",
+  "description": "輸入主題，依 Facebook／Instagram／X／Threads 各平台字數與語氣慣例產生優化貼文，Facebook 可直接自動發布",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#12131c",
+  "theme_color": "#7c6cf5",
+  "lang": "zh-TW",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

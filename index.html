@@ -4,6 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>社群貼文產生器 · SocialPost</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#7c6cf5">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="SocialPost">
 <style>
   :root{
     --bg:#12131c;
@@ -200,6 +207,11 @@
     font-size:12.5px;color:var(--text-faint);font-family:var(--font-mono);
   }
   .footer-meta a{color:var(--text-dim);}
+  .footer-link-btn{
+    background:none;border:1px solid var(--line-soft);color:var(--text-dim);
+    font-family:var(--font-mono);font-size:12.5px;padding:4px 10px;border-radius:6px;cursor:pointer;
+  }
+  .footer-link-btn:hover{border-color:var(--violet);color:var(--text);}
 
   .toast{
     position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);
@@ -310,6 +322,7 @@
   <div class="footer-meta">
     <span>製作：Mark Tsai｜<a href="mailto:tsaimark@gmail.com">tsaimark@gmail.com</a></span>
     <img src="https://visitor-badge.laobi.icu/badge?page_id=m255525.socialpost" alt="訪客次數" style="vertical-align:middle;height:20px;">
+    <button type="button" id="installBtn" class="footer-link-btn">📲 加入主畫面</button>
     <a href="manual.html">操作手冊 →</a>
   </div>
 </footer>
@@ -957,6 +970,56 @@
   loadDraft();
   initAiPanel();
   initExamples();
+})();
+</script>
+
+<script>
+/* ================= PWA 加入主畫面（獨立運作，跟上方主程式邏輯無關） ================= */
+(function () {
+  'use strict';
+  var deferredPrompt = null;
+  var btn = document.getElementById('installBtn');
+
+  var ua = navigator.userAgent || '';
+  var isIOSDevice = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  var isMacDesktop = /Macintosh/.test(ua) && !isIOSDevice;
+  var isSafariEngine = /^((?!chrome|crios|fxios|edgios|android).)*safari/i.test(ua);
+  var isStandalone = (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || window.navigator.standalone === true;
+
+  function fallbackMessage() {
+    if (isIOSDevice) return '請點畫面上的「分享」圖示，選「加入主畫面」';
+    if (isMacDesktop && isSafariEngine) return '請用選單列「檔案」→「加入 Dock」（Safari 17 以上）';
+    return '目前瀏覽器不支援安裝，或已安裝過';
+  }
+
+  window.addEventListener('beforeinstallprompt', function (e) {
+    e.preventDefault();
+    deferredPrompt = e;
+  });
+  window.addEventListener('appinstalled', function () {
+    deferredPrompt = null;
+  });
+
+  if (btn) {
+    if (isStandalone) {
+      btn.style.display = 'none';
+    } else {
+      btn.addEventListener('click', function () {
+        if (!deferredPrompt) {
+          if (typeof showToast === 'function') showToast(fallbackMessage());
+          return;
+        }
+        deferredPrompt.prompt();
+        deferredPrompt.userChoice.then(function () { deferredPrompt = null; });
+      });
+    }
+  }
+
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function () {
+      navigator.serviceWorker.register('service-worker.js').catch(function () {});
+    });
+  }
 })();
 </script>
 

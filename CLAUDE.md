@@ -36,6 +36,12 @@
 
 已推公開 GitHub repo：<https://github.com/M255525/SocialPost>，已開 GitHub Pages（`.github/workflows/deploy-pages.yml`，Actions 部署模式，比照 [[workspace-git-repos]] 記載的「不要用 legacy branch-source」慣例）：<https://m255525.github.io/SocialPost/>。頁尾加了訪客次數計數器（`visitor-badge.laobi.icu` 的 SVG badge，`<img>` 直接嵌入 `.footer-meta`，`page_id=m255525.socialpost`，免金鑰免後端）。`README.md` 比照 `ai-image-prompt-studio` 的既有格式撰寫。
 
+## 加入主畫面（PWA，2026-08-16 新增）
+
+比照工作區其餘已上線 GitHub Pages 工具（`ai-image-prompt-studio`／`ai-prompt-generator`／`food-finder` 等，見 [[pwa-install-rollout]]）的既有做法：`manifest.json`＋`icons/`（主色 `#7c6cf5` 背景、白色「貼」字圖示，PIL＋`msjhbd.ttc` 產生，192／512／maskable-512／apple-touch-icon 四種尺寸）＋`service-worker.js`（network-first＋同源快取備援，跨網域請求略過不進快取——本工具的 AI/Facebook API 呼叫本來就是瀏覽器直接打外部網域，SW 不會攔到）。安裝按鈕（`#installBtn`，📲 加入主畫面）放在 `.footer-meta`（新增 `.footer-link-btn` 樣式），因為本工具**有 `showToast()`**（既有的 toast 提示機制），安裝失敗時直接沿用，不需要像沒有 toast 的專案那樣改用 `alert()`。`<head>` 補上 `manifest`／`theme-color`／`apple-touch-icon`／`apple-mobile-web-app-*`／`mobile-web-app-capable` 標籤；安裝腳本是獨立 `<script>` IIFE（含 iOS/iPadOS/macOS Safari 判斷，`beforeinstallprompt` 不會在這些瀏覽器觸發、要改用文字指引），跟上方主程式邏輯互不相依。
+
+**2026-08-14 那次工作區全站 PWA 推廣時本工具被排除**（見 [[pwa-install-rollout]]：「經檢查後確認沒有 GitHub Pages 部署」），因為當時本工具尚未上線；2026-08-15 才推公開 repo＋開 GitHub Pages，補上是這之後的事。
+
 ## 指令
 
 無建置/測試指令。修改 `index.html` 或 `manual.html` 後用瀏覽器開啟驗證，或 `python -m http.server 8778 --directory SocialPost` 暫起伺服器測完關閉。用 Preview MCP 驗證時，`preview_eval` 讀 DOM／觸發事件比截圖可靠（與工作區其他單檔工具已知的截圖偶發逾時問題相同）。
