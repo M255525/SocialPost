@@ -270,6 +270,32 @@
           <option value="announcement">正式公告</option>
         </select>
       </div>
+      <div>
+        <label class="field-label" for="roleSelect">貼文角色／人設</label>
+        <select id="roleSelect">
+          <option value="brand">品牌官方小編</option>
+          <option value="owner">老闆／創辦人本人</option>
+          <option value="kol">網紅／內容創作者</option>
+          <option value="expert">專業顧問／老師</option>
+          <option value="mascot">品牌吉祥物角色</option>
+          <option value="custom">✏️ 自訂角色…</option>
+        </select>
+        <input type="text" id="roleCustomInput" placeholder="例：熱愛衝浪的海邊咖啡店老闆" style="display:none;margin-top:8px;">
+      </div>
+      <div>
+        <label class="field-label" for="purposeSelect">貼文目的</label>
+        <select id="purposeSelect">
+          <option value="conversion">促購導購</option>
+          <option value="awareness">品牌曝光</option>
+          <option value="engagement">互動增粉</option>
+          <option value="event">活動宣傳</option>
+          <option value="announcement">公告通知</option>
+          <option value="education">教育科普</option>
+          <option value="trust">建立信任／口碑</option>
+          <option value="custom">✏️ 自訂目的…</option>
+        </select>
+        <input type="text" id="purposeCustomInput" placeholder="例：邀請大家留言分享自己的故事" style="display:none;margin-top:8px;">
+      </div>
     </div>
 
     <label class="field-label" style="margin-top:14px;">發布平台（可複選）</label>
@@ -286,6 +312,7 @@
       <label class="upload-btn">＋ 上傳影片<br>（單一檔案）<input type="file" id="videoInput" accept="video/*"></label>
     </div>
     <div class="media-thumbs" id="mediaThumbs"></div>
+    <p class="hint" id="imageAiHint" style="display:none;">🖼 已上傳圖片，若下方填有 API 金鑰，AI 產生貼文時會一併觀察圖片內容並融入文案（需選用支援圖片辨識的模型，如 Claude／GPT-4o／Gemini 系列）；未填金鑰的規則式引擎不會分析圖片內容。</p>
 
     <details class="api-settings">
       <summary>AI 優化設定（選用，需自備 API 金鑰）</summary>
@@ -367,6 +394,53 @@
   };
   var TONE_LABELS = { friendly:'親切口語', professional:'專業正式', promo:'促購優惠', announcement:'正式公告' };
 
+  /* ---------- 貼文角色／人設（預設 + 自訂） ---------- */
+  var ROLE_LABELS = { brand:'品牌官方小編', owner:'老闆／創辦人本人', kol:'網紅／內容創作者', expert:'專業顧問／老師', mascot:'品牌吉祥物角色' };
+  var ROLE_DESCRIPTIONS = {
+    brand:  '品牌官方帳號小編，代表整個品牌發聲，語氣友善但保持一致的品牌調性',
+    owner:  '老闆／創辦人本人親自發文，語氣更個人化、有溫度，可以用第一人稱分享心情或幕後故事',
+    kol:    '網紅／內容創作者的分享或業配口吻，強調真實體驗與個人觀點',
+    expert: '產業專業顧問／老師，具權威感與專業建議語氣，用詞精準、有憑有據',
+    mascot: '品牌吉祥物或虛擬角色，語氣俏皮擬人化，可以用第一人稱自稱吉祥物的名字或暱稱'
+  };
+
+  /* ---------- 貼文目的（預設 + 自訂） ---------- */
+  var PURPOSE_LABELS = { conversion:'促購導購', awareness:'品牌曝光', engagement:'互動增粉', event:'活動宣傳', announcement:'公告通知', education:'教育科普', trust:'建立信任／口碑' };
+  var PURPOSE_DESCRIPTIONS = {
+    conversion:   '促購導購——目標是讓讀者立刻行動購買、預約或到店消費，結尾要有清楚的行動呼籲（CTA）',
+    awareness:    '品牌曝光——目標是提升品牌知名度與好感度，不急著銷售，著重讓人記住品牌調性',
+    engagement:   '互動增粉——目標是引導讀者留言、分享、標記朋友，設計能提高互動率的提問或活動',
+    event:        '活動宣傳——目標是讓讀者清楚知道活動的時間、地點、內容並想要報名或參加',
+    announcement: '公告通知——目標是清楚、準確地傳達重要資訊，避免造成讀者誤解',
+    education:    '教育科普——目標是提供實用知識或小技巧，建立專業與可信賴的形象',
+    trust:        '建立信任／口碑——目標是透過故事、顧客回饋或幕後花絮建立情感連結與信任感'
+  };
+
+  function getRoleText(){
+    var sel = $('roleSelect').value;
+    return sel === 'custom' ? $('roleCustomInput').value.trim() : (ROLE_DESCRIPTIONS[sel] || '');
+  }
+  function getRoleLabel(){
+    var sel = $('roleSelect').value;
+    return sel === 'custom' ? ($('roleCustomInput').value.trim() || '未填寫自訂角色') : (ROLE_LABELS[sel] || sel);
+  }
+  function getPurposeText(){
+    var sel = $('purposeSelect').value;
+    return sel === 'custom' ? $('purposeCustomInput').value.trim() : (PURPOSE_DESCRIPTIONS[sel] || '');
+  }
+  function getPurposeLabel(){
+    var sel = $('purposeSelect').value;
+    return sel === 'custom' ? ($('purposeCustomInput').value.trim() || '未填寫自訂目的') : (PURPOSE_LABELS[sel] || sel);
+  }
+  function syncCustomInputVisibility(selectId, inputId){
+    var isCustom = $(selectId).value === 'custom';
+    $(inputId).style.display = isCustom ? 'block' : 'none';
+  }
+  $('roleSelect').addEventListener('change', function(){ syncCustomInputVisibility('roleSelect', 'roleCustomInput'); saveDraft(); });
+  $('purposeSelect').addEventListener('change', function(){ syncCustomInputVisibility('purposeSelect', 'purposeCustomInput'); saveDraft(); });
+  $('roleCustomInput').addEventListener('input', saveDraft);
+  $('purposeCustomInput').addEventListener('input', saveDraft);
+
   /* ---------- 內建範例（皆為虛構情境，供快速上手） ---------- */
   var EXAMPLES = [
     {
@@ -374,6 +448,8 @@
       label: '☕ 咖啡店週末優惠',
       topic: '本週六日限定，凡點任一杯手沖咖啡即贈自家烘焙餅乾一份，內用外帶皆適用，數量有限每日限量50份，售完為止。地點在「拾光咖啡」信義店。',
       tone: 'promo',
+      role: 'brand',
+      purpose: 'conversion',
       platforms: ['facebook', 'instagram']
     },
     {
@@ -381,6 +457,8 @@
       label: '🧘 瑜伽教室招生',
       topic: '「心境瑜伽」全新初階哈達瑜伽班即將開課，適合完全沒有經驗的新手，共8堂課，每週二四晚上7點，小班制最多8人，即日起開放報名，前5名報名再送一堂體驗課。',
       tone: 'friendly',
+      role: 'owner',
+      purpose: 'event',
       platforms: ['facebook', 'instagram', 'threads']
     },
     {
@@ -388,6 +466,8 @@
       label: '🍰 手作甜點新品',
       topic: '手作甜點工作室「甜點時光」本月推出新品——芒果生乳酪蛋白霜塔，選用屏東愛文芒果，酸甜比例剛好，每天限量20顆，可線上預訂隔日取貨。',
       tone: 'friendly',
+      role: 'owner',
+      purpose: 'awareness',
       platforms: ['instagram', 'threads']
     },
     {
@@ -395,6 +475,8 @@
       label: '🐾 寵物店颱風公休',
       topic: '因應颱風來襲，「毛孩子寵物美容」明日（週五）暫停營業一天，已預約的顧客將由專人主動聯繫改期，造成不便敬請見諒，請大家做好防颱準備、注意自身與寵物安全。',
       tone: 'announcement',
+      role: 'brand',
+      purpose: 'announcement',
       platforms: ['facebook', 'x', 'threads']
     },
     {
@@ -402,6 +484,8 @@
       label: '🛍️ 選物店年中特賣',
       topic: '「拾物選物店」年中特賣正式開跑，即日起至月底，全館服飾配件85折，滿2000元再折200，會員另有加碼贈品，歡迎至門市或線上商城選購。',
       tone: 'promo',
+      role: 'brand',
+      purpose: 'conversion',
       platforms: ['facebook', 'instagram', 'x']
     }
   ];
@@ -420,6 +504,10 @@
       if(hasContent && !confirm('套用範例會覆蓋目前已輸入的內容，確定要繼續嗎？')) return;
       $('topicInput').value = ex.topic;
       $('toneSelect').value = ex.tone;
+      $('roleSelect').value = ex.role || 'brand';
+      $('purposeSelect').value = ex.purpose || 'conversion';
+      syncCustomInputVisibility('roleSelect', 'roleCustomInput');
+      syncCustomInputVisibility('purposeSelect', 'purposeCustomInput');
       document.querySelectorAll('.platform-check input').forEach(function(el){
         el.checked = ex.platforms.indexOf(el.value) >= 0;
       });
@@ -446,6 +534,7 @@
       html += '<div class="thumb"><video src="' + mediaState.video.url + '" muted></video><button type="button" class="rm" data-kind="video" data-id="video">×</button><span class="tag">影片</span></div>';
     }
     box.innerHTML = html;
+    $('imageAiHint').style.display = mediaState.images.length ? 'block' : 'none';
   }
 
   $('imageInput').addEventListener('change', function(e){
@@ -552,26 +641,55 @@
     $('aiKey').addEventListener('input', persistApiConfig);
   }
 
-  function buildAiPrompt(topic, tone, platformKeys){
+  function buildAiPrompt(topic, tone, platformKeys, roleText, purposeText, hasImages){
     var specLines = platformKeys.map(function(k){
       var s = PLATFORM_SPECS[k];
       return '- ' + k + '（' + s.label + '）：字數上限 ' + s.charLimit + ' 字，建議落在 ' + s.sweet + '；hashtag ' + s.hashtagNote + '；語氣要求：' + s.tone;
     }).join('\n');
-    return '你是一位熟悉台灣社群媒體經營的文案顧問，請把使用者提供的主題／方向／內容，分別改寫成以下每個平台的優化版貼文文案：\n\n'
-      + specLines + '\n\n'
-      + '使用者指定的整體語氣是「' + (TONE_LABELS[tone] || tone) + '」，請在此語氣基礎上依各平台特性微調。\n\n'
-      + '原始主題／方向／內容如下：\n「' + topic + '」\n\n'
-      + '請為每個平台各自產生一份「完整可直接發布」的貼文全文，包含建議的 hashtag（hashtag 直接放在文末，用空白分隔，前面加 #），不要額外加註解、不要條列多個版本讓使用者選。\n\n'
-      + '請只輸出一個 JSON 物件，不要 markdown 圍欄、不要任何其他文字，鍵固定為以下平台代碼（只需包含使用者要求的平台）：\n'
-      + '{' + platformKeys.map(function(k){ return '"' + k + '":"..."'; }).join(',') + '}';
+    var lines = [];
+    lines.push('你是一位熟悉台灣社群媒體經營的文案顧問，請把使用者提供的主題／方向／內容，分別改寫成以下每個平台的優化版貼文文案：');
+    lines.push('');
+    lines.push(specLines);
+    lines.push('');
+    if(roleText){
+      lines.push('請以以下角色／人設的口吻撰寫貼文（用詞、視角、語氣都要符合這個角色）：' + roleText);
+    }
+    if(purposeText){
+      lines.push('這則貼文的目的是：' + purposeText + '，文案內容與結尾的行動呼籲都要緊扣這個目的。');
+    }
+    lines.push('使用者指定的整體語氣是「' + (TONE_LABELS[tone] || tone) + '」，請在角色與目的的基礎上，用這個語氣微調表達方式，並依各平台特性再進一步調整。');
+    lines.push('');
+    lines.push('原始主題／方向／內容如下：\n「' + topic + '」');
+    if(hasImages){
+      lines.push('');
+      lines.push('使用者也附上了以下這張／這幾張圖片作為這則貼文要搭配發布的素材，請你先仔細觀察圖片內容（畫面中的主體、場景、氛圍、色調、細節），並在文案中適度呼應或描述圖片裡看得到的重點，讓文字與圖片相輔相成，不要完全忽略圖片內容只憑主題文字生成。');
+    }
+    lines.push('');
+    lines.push('請為每個平台各自產生一份「完整可直接發布」的貼文全文，包含建議的 hashtag（hashtag 直接放在文末，用空白分隔，前面加 #），不要額外加註解、不要條列多個版本讓使用者選。');
+    lines.push('');
+    lines.push('請只輸出一個 JSON 物件，不要 markdown 圍欄、不要任何其他文字，鍵固定為以下平台代碼（只需包含使用者要求的平台）：');
+    lines.push('{' + platformKeys.map(function(k){ return '"' + k + '":"..."'; }).join(',') + '}');
+    return lines.join('\n');
   }
 
-  async function callLLM(provider, model, apiKey, prompt, onRetry){
+  function splitDataUrl(dataUrl){
+    var m = dataUrl.match(/^data:(.*?);base64,(.*)$/);
+    return m ? {mime:m[1], data:m[2]} : null;
+  }
+
+  async function callLLM(provider, model, apiKey, prompt, onRetry, imagesDataUrls){
     var url, headers, body, extract;
+    var imgs = (imagesDataUrls || []).map(function(du){
+      var s = splitDataUrl(du);
+      return s ? {mime:s.mime, data:s.data, dataUrl:du} : null;
+    }).filter(Boolean);
     if(provider === 'claude'){
       url = 'https://api.anthropic.com/v1/messages';
       headers = {'content-type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'};
-      body = {model: model, max_tokens: 4000, messages: [{role:'user', content: prompt}]};
+      var claudeContent = imgs.length
+        ? imgs.map(function(img){ return {type:'image', source:{type:'base64', media_type:img.mime, data:img.data}}; }).concat([{type:'text', text:prompt}])
+        : prompt;
+      body = {model: model, max_tokens: 4000, messages: [{role:'user', content: claudeContent}]};
       extract = function(d){
         if(d.stop_reason === 'refusal') throw new Error('模型拒絕了這個請求（refusal）');
         var t = (d.content || []).filter(function(b){ return b.type === 'text'; }).map(function(b){ return b.text; }).join('');
@@ -581,7 +699,10 @@
     } else if(provider === 'openai'){
       url = 'https://api.openai.com/v1/chat/completions';
       headers = {'content-type':'application/json','authorization':'Bearer ' + apiKey};
-      body = {model: model, messages: [{role:'user', content: prompt}]};
+      var oaContent = imgs.length
+        ? [{type:'text', text:prompt}].concat(imgs.map(function(img){ return {type:'image_url', image_url:{url:img.dataUrl}}; }))
+        : prompt;
+      body = {model: model, messages: [{role:'user', content: oaContent}]};
       extract = function(d){
         var t = d.choices && d.choices[0] && d.choices[0].message && d.choices[0].message.content;
         if(!t) throw new Error('回應中沒有文字內容');
@@ -590,17 +711,21 @@
     } else if(provider === 'gemini'){
       url = 'https://generativelanguage.googleapis.com/v1beta/models/' + encodeURIComponent(model) + ':generateContent';
       headers = {'content-type':'application/json','x-goog-api-key':apiKey};
-      body = {contents: [{parts: [{text: prompt}]}]};
+      var parts = [{text: prompt}].concat(imgs.map(function(img){ return {inline_data:{mime_type:img.mime, data:img.data}}; }));
+      body = {contents: [{parts: parts}]};
       extract = function(d){
-        var parts = (d.candidates && d.candidates[0] && d.candidates[0].content && d.candidates[0].content.parts) || [];
-        var t = parts.map(function(p){ return p.text || ''; }).join('');
+        var parts2 = (d.candidates && d.candidates[0] && d.candidates[0].content && d.candidates[0].content.parts) || [];
+        var t = parts2.map(function(p){ return p.text || ''; }).join('');
         if(!t) throw new Error('回應中沒有文字內容');
         return t;
       };
     } else if(provider === 'openrouter'){
       url = 'https://openrouter.ai/api/v1/chat/completions';
       headers = {'content-type':'application/json','authorization':'Bearer ' + apiKey};
-      body = {model: model, messages: [{role:'user', content: prompt}]};
+      var orContent = imgs.length
+        ? [{type:'text', text:prompt}].concat(imgs.map(function(img){ return {type:'image_url', image_url:{url:img.dataUrl}}; }))
+        : prompt;
+      body = {model: model, messages: [{role:'user', content: orContent}]};
       extract = function(d){
         var t = d.choices && d.choices[0] && d.choices[0].message && d.choices[0].message.content;
         if(!t) throw new Error('回應中沒有文字內容');
@@ -638,6 +763,7 @@
   }
 
   /* ---------- 產生流程 ---------- */
+  var MAX_IMAGES_FOR_AI = 3; // 避免一次塞太多張圖片給 AI，拖慢請求／增加費用；只取最先上傳的幾張
   $('generateBtn').addEventListener('click', async function(){
     var topic = $('topicInput').value.trim();
     var tone = $('toneSelect').value;
@@ -652,16 +778,22 @@
     var model = $('aiModel').value.trim();
     persistApiConfig();
 
+    var roleText = getRoleText();
+    var purposeText = getPurposeText();
+    var imageDataUrls = mediaState.images.slice(0, MAX_IMAGES_FOR_AI).map(function(i){ return i.dataUrl; });
+
     var btn = this;
     btn.disabled = true;
     var results = {};
 
     if(apiKey){
-      report.innerHTML = '<div class="ok">呼叫 ' + AI_PROVIDERS[provider].label + '（' + escapeHtml(model) + '）產生中，請稍候…</div>';
+      var imgNote = imageDataUrls.length ? '（已附上 ' + imageDataUrls.length + ' 張圖片供 AI 參考）' : '';
+      report.innerHTML = '<div class="ok">呼叫 ' + AI_PROVIDERS[provider].label + '（' + escapeHtml(model) + '）產生中' + imgNote + '，請稍候…</div>';
       try{
-        var text = await callLLM(provider, model, apiKey, buildAiPrompt(topic, tone, platforms), function(attempt, status, waitSec){
+        var prompt = buildAiPrompt(topic, tone, platforms, roleText, purposeText, imageDataUrls.length > 0);
+        var text = await callLLM(provider, model, apiKey, prompt, function(attempt, status, waitSec){
           report.innerHTML = '<div class="warn">API 回應 ' + status + '（服務商暫時過載／限流），' + waitSec + ' 秒後自動重試（第 ' + attempt + '／2 次）…</div>';
-        });
+        }, imageDataUrls);
         var parsed = extractJsonObject(text);
         var missing = [];
         platforms.forEach(function(k){
@@ -672,7 +804,7 @@
             missing.push(PLATFORM_SPECS[k].label);
           }
         });
-        report.innerHTML = '<div class="ok">已依 ' + platforms.length + ' 個平台產生優化文案，請檢查後再發布或複製使用。</div>'
+        report.innerHTML = '<div class="ok">已依 ' + platforms.length + ' 個平台產生優化文案（角色：' + escapeHtml(getRoleLabel()) + '／目的：' + escapeHtml(getPurposeLabel()) + '），請檢查後再發布或複製使用。</div>'
           + (missing.length ? '<div class="warn">' + missing.join('、') + ' 未取得 AI 結果，已改用規則式引擎產生。</div>' : '');
       }catch(err){
         var msg = err.name === 'TimeoutError' ? '請求逾時（180秒）' : err.message;
@@ -681,7 +813,7 @@
       }
     } else {
       platforms.forEach(function(k){ results[k] = ruleBasedGenerate(topic, tone, k); });
-      report.innerHTML = '<div class="warn">未填 API 金鑰，已使用規則式引擎產生基本優化文案（字數截斷＋關鍵詞 hashtag）。</div>';
+      report.innerHTML = '<div class="warn">未填 API 金鑰，已使用規則式引擎產生基本優化文案（字數截斷＋關鍵詞 hashtag，不含角色／目的與圖片內容分析——這些需要串接 AI 才會生效）。</div>';
     }
 
     renderResults(platforms, results);
@@ -954,6 +1086,10 @@
       localStorage.setItem(DRAFT_KEY, JSON.stringify({
         topic: $('topicInput').value,
         tone: $('toneSelect').value,
+        role: $('roleSelect').value,
+        roleCustom: $('roleCustomInput').value,
+        purpose: $('purposeSelect').value,
+        purposeCustom: $('purposeCustomInput').value,
         platforms: selectedPlatforms()
       }));
     }catch(e){}
@@ -965,6 +1101,12 @@
       var d = JSON.parse(raw);
       if(d.topic) $('topicInput').value = d.topic;
       if(d.tone) $('toneSelect').value = d.tone;
+      if(d.role) $('roleSelect').value = d.role;
+      if(d.roleCustom) $('roleCustomInput').value = d.roleCustom;
+      if(d.purpose) $('purposeSelect').value = d.purpose;
+      if(d.purposeCustom) $('purposeCustomInput').value = d.purposeCustom;
+      syncCustomInputVisibility('roleSelect', 'roleCustomInput');
+      syncCustomInputVisibility('purposeSelect', 'purposeCustomInput');
       if(d.platforms){
         document.querySelectorAll('.platform-check input').forEach(function(el){
           el.checked = d.platforms.indexOf(el.value) >= 0;
