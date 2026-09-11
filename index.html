@@ -298,6 +298,10 @@
       </div>
     </div>
 
+    <label class="field-label" for="extraRequirements" style="margin-top:14px;">額外要求／特殊指示（選填）</label>
+    <textarea id="extraRequirements" placeholder="例：不要使用驚嘆號、字數盡量精簡、內文一定要提到品牌名稱、結尾加上「歡迎私訊詢問」、避免提及確切價格"></textarea>
+    <p class="hint">這裡填寫的內容會附加在送給 AI 的提示詞裡，AI 產生文案時會盡量遵守；規則式引擎（未填 API 金鑰時）不會套用此欄位。</p>
+
     <label class="field-label" style="margin-top:14px;">發布平台（可複選）</label>
     <div class="platform-grid" id="platformGrid">
       <label class="platform-check" data-platform="facebook"><input type="checkbox" value="facebook" checked><span class="swatch"></span>Facebook</label>
@@ -319,7 +323,12 @@
       <div class="api-grid">
         <label>服務商<select id="aiProvider"></select></label>
         <label>模型<input type="text" id="aiModel" placeholder="模型名稱"></label>
-        <label class="full">API 金鑰<input type="password" id="aiKey" placeholder="貼上你的 API Key" autocomplete="off"></label>
+        <label class="full">API 金鑰
+          <span style="position:relative;display:block;">
+            <input type="password" id="aiKey" placeholder="貼上你的 API Key" autocomplete="off" style="padding-right:34px;box-sizing:border-box;">
+            <button type="button" onclick="var i=this.previousElementSibling;i.type=i.type==='password'?'text':'password';this.textContent=i.type==='password'?'👁':'🙈';" title="顯示／隱藏金鑰" aria-label="顯示／隱藏金鑰" style="position:absolute;right:4px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:15px;padding:4px 6px;opacity:.65;line-height:1;">👁</button>
+          </span>
+        </label>
       </div>
       <p class="api-note">金鑰只存在這台電腦的瀏覽器（localStorage），不會送到本工具以外的任何地方。留空時仍可使用「規則式引擎」產生基本優化文案（依平台字數上限截斷、從主題挑關鍵詞組 hashtag），但語意優化效果不如串接 AI。</p>
     </details>
@@ -641,7 +650,7 @@
     $('aiKey').addEventListener('input', persistApiConfig);
   }
 
-  function buildAiPrompt(topic, tone, platformKeys, roleText, purposeText, hasImages){
+  function buildAiPrompt(topic, tone, platformKeys, roleText, purposeText, hasImages, extraRequirements){
     var specLines = platformKeys.map(function(k){
       var s = PLATFORM_SPECS[k];
       return '- ' + k + '（' + s.label + '）：字數上限 ' + s.charLimit + ' 字，建議落在 ' + s.sweet + '；hashtag ' + s.hashtagNote + '；語氣要求：' + s.tone;
@@ -660,6 +669,10 @@
     lines.push('使用者指定的整體語氣是「' + (TONE_LABELS[tone] || tone) + '」，請在角色與目的的基礎上，用這個語氣微調表達方式，並依各平台特性再進一步調整。');
     lines.push('');
     lines.push('原始主題／方向／內容如下：\n「' + topic + '」');
+    if(extraRequirements){
+      lines.push('');
+      lines.push('使用者對這則貼文另有以下額外要求／特殊指示，請務必遵守（若與上面的角色／目的／語氣有衝突，以這裡的要求為準）：\n' + extraRequirements);
+    }
     if(hasImages){
       lines.push('');
       lines.push('使用者也附上了以下這張／這幾張圖片作為這則貼文要搭配發布的素材，請你先仔細觀察圖片內容（畫面中的主體、場景、氛圍、色調、細節），並在文案中適度呼應或描述圖片裡看得到的重點，讓文字與圖片相輔相成，不要完全忽略圖片內容只憑主題文字生成。');
@@ -780,6 +793,7 @@
 
     var roleText = getRoleText();
     var purposeText = getPurposeText();
+    var extraRequirements = $('extraRequirements').value.trim();
     var imageDataUrls = mediaState.images.slice(0, MAX_IMAGES_FOR_AI).map(function(i){ return i.dataUrl; });
 
     var btn = this;
@@ -790,7 +804,7 @@
       var imgNote = imageDataUrls.length ? '（已附上 ' + imageDataUrls.length + ' 張圖片供 AI 參考）' : '';
       report.innerHTML = '<div class="ok">呼叫 ' + AI_PROVIDERS[provider].label + '（' + escapeHtml(model) + '）產生中' + imgNote + '，請稍候…</div>';
       try{
-        var prompt = buildAiPrompt(topic, tone, platforms, roleText, purposeText, imageDataUrls.length > 0);
+        var prompt = buildAiPrompt(topic, tone, platforms, roleText, purposeText, imageDataUrls.length > 0, extraRequirements);
         var text = await callLLM(provider, model, apiKey, prompt, function(attempt, status, waitSec){
           report.innerHTML = '<div class="warn">API 回應 ' + status + '（服務商暫時過載／限流），' + waitSec + ' 秒後自動重試（第 ' + attempt + '／2 次）…</div>';
         }, imageDataUrls);
@@ -1090,6 +1104,7 @@
         roleCustom: $('roleCustomInput').value,
         purpose: $('purposeSelect').value,
         purposeCustom: $('purposeCustomInput').value,
+        extraRequirements: $('extraRequirements').value,
         platforms: selectedPlatforms()
       }));
     }catch(e){}
@@ -1105,6 +1120,7 @@
       if(d.roleCustom) $('roleCustomInput').value = d.roleCustom;
       if(d.purpose) $('purposeSelect').value = d.purpose;
       if(d.purposeCustom) $('purposeCustomInput').value = d.purposeCustom;
+      if(d.extraRequirements) $('extraRequirements').value = d.extraRequirements;
       syncCustomInputVisibility('roleSelect', 'roleCustomInput');
       syncCustomInputVisibility('purposeSelect', 'purposeCustomInput');
       if(d.platforms){
@@ -1116,6 +1132,7 @@
   }
   $('topicInput').addEventListener('input', saveDraft);
   $('toneSelect').addEventListener('change', saveDraft);
+  $('extraRequirements').addEventListener('input', saveDraft);
   document.querySelectorAll('.platform-check input').forEach(function(el){ el.addEventListener('change', saveDraft); });
 
   loadDraft();
