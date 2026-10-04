@@ -229,9 +229,41 @@
   }
   .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
 
+  .tab-bar{display:flex;gap:6px;margin:0 0 22px;border-bottom:1px solid var(--line);}
+  .tab-btn{
+    font-family:var(--font-sans);font-size:14.5px;font-weight:700;
+    background:transparent;color:var(--text-dim);border:1px solid transparent;border-bottom:none;
+    padding:10px 18px;border-radius:8px 8px 0 0;cursor:pointer;margin-bottom:-1px;transition:.15s;
+  }
+  .tab-btn:hover{color:var(--violet);}
+  .tab-btn.active{background:var(--panel-raised);color:var(--violet);border-color:var(--line);border-bottom:1px solid var(--panel-raised);}
+  .tab-panel[hidden]{display:none;}
+
+  .angle-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;margin-top:10px;}
+  .angle-check{
+    display:flex;gap:9px;align-items:flex-start;background:var(--bg-alt);border:1px solid var(--line);
+    border-radius:8px;padding:10px 12px;cursor:pointer;transition:.15s;
+  }
+  .angle-check:hover{border-color:var(--violet);}
+  .angle-check input{width:auto;margin-top:4px;}
+  .angle-check.recommended{border-color:rgba(63,199,176,0.55);}
+  .angle-check .a-name{font-size:13.5px;font-weight:700;display:block;}
+  .angle-check .a-desc{font-size:12px;color:var(--text-faint);line-height:1.5;display:block;margin-top:2px;}
+  .angle-check .a-rec{font-size:10.5px;color:var(--teal);font-family:var(--font-mono);margin-left:6px;}
+  .type-badge{display:inline-block;font-size:12px;font-family:var(--font-mono);padding:3px 10px;border-radius:999px;background:var(--violet-soft);color:var(--violet);border:1px solid var(--line);}
+  .ai-status-line{font-size:12.5px;color:var(--text-dim);margin-top:12px;}
+  .ai-status-line a{cursor:pointer;}
+  .reply-card{border-left:4px solid var(--teal);}
+  .reply-card textarea{min-height:110px;font-size:14px;}
+  .reply-note{font-size:12.5px;color:var(--text-faint);margin-top:8px;}
+  .advice-box{background:rgba(232,163,61,0.08);border:1px solid rgba(232,163,61,0.35);border-radius:8px;padding:14px 16px;font-size:13px;color:var(--text-dim);margin-bottom:18px;}
+  .advice-box strong{color:var(--amber);}
+  .advice-box ul{margin:6px 0 0;padding-left:20px;}
+
   @media (max-width:640px){
     .api-grid{grid-template-columns:1fr;}
     .row{flex-direction:column;}
+    .tab-btn{padding:9px 12px;font-size:13.5px;}
   }
 </style>
 </head>
@@ -247,10 +279,17 @@
 <div class="hero">
   <div class="eyebrow">FACEBOOK · INSTAGRAM · X · THREADS</div>
   <h1>一份主題，<span class="accent">四種平台優化貼文</span></h1>
-  <p class="lead">輸入主題、方向或現成內容，依各平台字數與語氣慣例產生優化文案；Facebook 可直接登入自動發布，其餘平台複製貼上即可手動發布。</p>
+  <p class="lead">輸入主題、方向或現成內容，依各平台字數與語氣慣例產生優化文案；Facebook 可直接登入自動發布，其餘平台複製貼上即可手動發布。另有「留言回覆」分頁，針對粉絲留言產生多種角度的回覆建議。</p>
 </div>
 
 <main>
+
+  <div class="tab-bar" role="tablist">
+    <button type="button" class="tab-btn active" role="tab" data-tab="post" aria-selected="true">📝 貼文產生</button>
+    <button type="button" class="tab-btn" role="tab" data-tab="reply" aria-selected="false">💬 留言回覆</button>
+  </div>
+
+  <section class="tab-panel" id="tab-post" role="tabpanel">
 
   <div class="card">
     <h2><span class="num">1</span>貼文素材</h2>
@@ -350,6 +389,90 @@
       <p class="placeholder-empty">尚未產生貼文——請在上方填寫素材後按「產生優化貼文」。</p>
     </div>
   </div>
+
+  </section>
+
+  <section class="tab-panel" id="tab-reply" role="tabpanel" hidden>
+
+  <div class="card">
+    <h2><span class="num">1</span>粉絲留言與情境</h2>
+    <p class="hint">貼上粉絲的留言，選擇想要的回應角度，每個角度會各產生一版回覆，挑最適合的微調後複製貼上即可。</p>
+
+    <label class="field-label" for="replyComment">粉絲留言內容（必填）</label>
+    <textarea id="replyComment" placeholder="例：上週買的蛋糕隔天就有點酸味，有點失望…"></textarea>
+
+    <label class="field-label" style="margin-top:14px;">範例留言（點一下直接帶入，皆為虛構情境）</label>
+    <div class="example-row" id="replyExampleRow"></div>
+
+    <label class="field-label" for="replyPost" style="margin-top:14px;">原貼文內容（選填，提供脈絡讓回覆更貼切）</label>
+    <textarea id="replyPost" placeholder="例：本月新品芒果生乳酪蛋白霜塔，每日限量20顆…" style="min-height:80px;"></textarea>
+    <div class="result-actions" style="margin-top:8px;">
+      <button type="button" class="btn ghost" id="replyPullPostBtn">⇩ 帶入「貼文產生」分頁的內容</button>
+    </div>
+
+    <div class="row">
+      <div>
+        <label class="field-label" for="replyType">留言類型</label>
+        <select id="replyType"></select>
+        <div style="margin-top:8px;">判讀結果：<span class="type-badge" id="replyTypeDetected">—</span></div>
+      </div>
+      <div>
+        <label class="field-label" for="replyRoleSelect">以誰的身分回覆</label>
+        <select id="replyRoleSelect"></select>
+        <input type="text" id="replyRoleCustomInput" placeholder="例：店裡負責烘焙的甜點師" style="display:none;margin-top:8px;">
+      </div>
+      <div>
+        <label class="field-label" for="replyPlatform">留言所在平台</label>
+        <select id="replyPlatform">
+          <option value="facebook">Facebook</option>
+          <option value="instagram">Instagram</option>
+          <option value="x">X（Twitter）</option>
+          <option value="threads">Threads</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="row">
+      <div>
+        <label class="field-label" for="replyName">留言者稱呼（選填）</label>
+        <input type="text" id="replyName" placeholder="例：小美、王先生">
+      </div>
+      <div>
+        <label class="field-label" for="replyBrand">品牌／店名（選填）</label>
+        <input type="text" id="replyBrand" placeholder="例：甜點時光">
+      </div>
+    </div>
+
+    <label class="field-label" style="margin-top:16px;">回應角度（可複選，每個角度產生一版；<span style="color:var(--teal);">綠框</span>為依留言類型推薦）</label>
+    <div class="angle-grid" id="replyAngleGrid"></div>
+    <div class="result-actions" style="margin-top:8px;">
+      <button type="button" class="btn ghost" id="replyUseRecBtn">只勾選推薦角度</button>
+    </div>
+
+    <label class="field-label" for="replyExtra" style="margin-top:14px;">已知資訊／額外要求（選填）</label>
+    <textarea id="replyExtra" placeholder="例：退換貨請於7天內聯繫、營業時間11:00-20:00、可補寄一份新品；不要使用表情符號" style="min-height:80px;"></textarea>
+    <p class="hint">回答問題需要的事實（價格、營業時間、退換貨規定、補償方案）請填在這裡，AI 只會引用你提供的資訊，不會自行編造；規則式引擎會留下【待補資訊】標記讓你手動填入。</p>
+
+    <div class="ai-status-line" id="replyAiStatus"></div>
+
+    <div class="result-actions">
+      <button class="btn primary" id="replyGenerateBtn" type="button">產生回覆建議</button>
+    </div>
+    <div id="replyReport" class="gen-report" aria-live="polite"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-head">
+      <h2><span class="num">2</span>回覆建議</h2>
+      <button class="btn" id="replyCopyAllBtn" type="button">📋 一鍵複製全部</button>
+    </div>
+    <p class="hint">每張卡片是一種回應角度，文字可直接修改；按「複製回覆」後貼到該則留言底下回覆。</p>
+    <div id="replyResults">
+      <p class="placeholder-empty">尚未產生回覆——請在上方貼上留言並按「產生回覆建議」。</p>
+    </div>
+  </div>
+
+  </section>
 
 </main>
 
@@ -1094,6 +1217,447 @@
     }
   }
 
+  /* ---------- 分頁切換 ---------- */
+  var TAB_KEY = 'socialpostActiveTab';
+  function switchTab(name){
+    document.querySelectorAll('.tab-btn').forEach(function(b){
+      var on = b.getAttribute('data-tab') === name;
+      b.classList.toggle('active', on);
+      b.setAttribute('aria-selected', on ? 'true' : 'false');
+    });
+    document.querySelectorAll('.tab-panel').forEach(function(p){ p.hidden = p.id !== 'tab-' + name; });
+    try{ localStorage.setItem(TAB_KEY, name); }catch(e){}
+    if(name === 'reply') updateReplyAiStatus();
+  }
+  function initTabs(){
+    document.querySelectorAll('.tab-btn').forEach(function(b){
+      b.addEventListener('click', function(){ switchTab(b.getAttribute('data-tab')); });
+    });
+    var saved = location.hash === '#reply' ? 'reply' : null;
+    if(!saved){ try{ saved = localStorage.getItem(TAB_KEY); }catch(e){} }
+    if(saved === 'reply') switchTab('reply');
+  }
+
+  /* ---------- 留言回覆：回應角度與留言類型 ---------- */
+  var REPLY_ANGLES = {
+    thanks:   { label:'🙏 感謝共鳴', desc:'真誠感謝，呼應留言裡的具體細節，讓對方覺得被看見' },
+    answer:   { label:'💡 專業解答', desc:'直接、具體回答問題或疑慮，資訊不足時誠實說明查詢管道' },
+    empathy:  { label:'🤝 同理安撫', desc:'先承認對方感受並誠懇致歉，不推卸不辯解，說明改善方式' },
+    dm:       { label:'📩 引導私訊', desc:'公開簡短表達重視，邀請私訊處理個資或複雜問題' },
+    promo:    { label:'🛒 順勢導購', desc:'回應同時自然帶出商品／活動資訊與行動呼籲，不硬銷' },
+    interact: { label:'💬 延伸互動', desc:'用反問或邀請延續對話，鼓勵再留言、分享、標記朋友' },
+    humor:    { label:'😄 幽默輕鬆', desc:'俏皮自嘲拉近距離，化解火藥味，但絕不嘲諷對方' },
+    clarify:  { label:'📌 理性澄清', desc:'冷靜有禮地用事實澄清誤會或不實資訊，不情緒化' }
+  };
+  // 給 AI 的完整角度說明（比 UI 上的 desc 更明確）
+  var REPLY_ANGLE_PROMPTS = {
+    thanks:   '感謝共鳴：真誠感謝留言者，具體呼應他提到的細節（不要只說「謝謝支持」這種罐頭句），讓對方感覺被看見',
+    answer:   '專業解答：直接、具體地回答對方的問題或疑慮；只能使用使用者提供的已知資訊，資訊不足時誠實說明並告知可以從哪裡查詢或請對方私訊，絕不編造價格、時間、規定等事實',
+    empathy:  '同理安撫：先承認並同理對方的感受、誠懇致歉，不推卸責任、不找藉口，接著說明會如何了解狀況、改善或補救',
+    dm:       '引導私訊：公開回覆保持簡短，表達重視與歉意或關心，邀請對方私訊提供訂單編號等細節，不要在公開留言要求對方提供電話、地址等個資',
+    promo:    '順勢導購：在回應留言的同時，自然地帶出相關商品／活動資訊與明確的行動呼籲（如何購買、預訂），不能硬銷或讓人覺得敷衍',
+    interact: '延伸互動：用反問、邀請分享經驗或標記朋友的方式延續對話，提高這則貼文的互動率',
+    humor:    '幽默輕鬆：用輕鬆俏皮、帶點自嘲或梗的方式回覆，拉近距離；如果留言帶有酸意，要用幽默化解火藥味，但絕對不能嘲諷、貶低留言者',
+    clarify:  '理性澄清：語氣冷靜有禮，用事實說明澄清誤會或不實資訊，不情緒化、不人身攻擊、不跟對方爭吵，必要時提供可查證的管道'
+  };
+
+  var COMMENT_TYPES = {
+    praise:     { label:'正面讚美',          angles:['thanks','interact','promo'] },
+    question:   { label:'詢問問題',          angles:['answer','dm','thanks'] },
+    purchase:   { label:'價格／購買詢問',    angles:['answer','promo','dm'] },
+    complaint:  { label:'負面抱怨／客訴',    angles:['empathy','dm','clarify'] },
+    suggestion: { label:'建議回饋',          angles:['thanks','answer','interact'] },
+    troll:      { label:'酸民／惡意留言',    angles:['clarify','humor','empathy'] },
+    neutral:    { label:'中性閒聊／表情符號', angles:['thanks','humor','interact'] }
+  };
+
+  var COMMENT_TYPE_ADVICE = {
+    praise:     ['盡量個別化回覆，避免每則都複製貼上同一句「謝謝支持」','可以私訊徵求同意後，把好評截圖分享為顧客見證'],
+    question:   ['回答要具體，不確定的資訊不要先答應','公開回覆「已私訊您」後，記得真的去私訊','同樣的問題反覆出現，代表貼文本身資訊不夠清楚，可考慮補充在原文或置頂留言'],
+    purchase:   ['價格、優惠若會變動，建議附上官方連結而非寫死數字','有購買意願的留言盡快回覆，回覆速度直接影響成交'],
+    complaint:  ['越快回覆越好（建議 24 小時內），先公開回應表達重視，再轉私訊處理細節','不要刪除負評，容易引發二次炎上；也不要在公開留言跟對方爭論對錯','不要在公開留言要求對方提供電話、地址等個資','處理完畢後可以回到原留言補一句「已私訊處理完成，謝謝您的包容」，讓其他人看到後續'],
+    suggestion: ['感謝並說明是否會評估採納，不要承諾做不到的事','真的採納後回頭告訴對方，是建立死忠粉絲的好機會'],
+    troll:      ['先判斷是否值得回應：純人身攻擊、與內容無關的謾罵，可直接隱藏留言（Facebook 隱藏後本人與其朋友仍看得到，不易察覺）','只回一次，不要連續來回爭論；回覆是寫給其他圍觀的粉絲看的','若涉及不實指控，用事實澄清並保留截圖，必要時尋求法律協助'],
+    neutral:    ['簡短友善即可，表情符號留言可以用表情加一句話回應','可以順勢反問，把單純的表情留言轉成一段對話']
+  };
+
+  var REPLY_EXAMPLES = [
+    { key:'praise',  label:'😍 讚美新品', type:'praise',
+      comment:'昨天去買了芒果塔，酸甜剛好超好吃！男友也一直說要再去買',
+      post:'手作甜點工作室「甜點時光」本月推出新品——芒果生乳酪蛋白霜塔，每天限量20顆，可線上預訂隔日取貨。',
+      brand:'甜點時光', extra:'' },
+    { key:'question', label:'❓ 詢問營業', type:'question',
+      comment:'請問颱風天隔天有開嗎？我已經預約週六下午了',
+      post:'因應颱風來襲，「毛孩子寵物美容」明日（週五）暫停營業一天，已預約的顧客將由專人主動聯繫改期。',
+      brand:'毛孩子寵物美容', extra:'週六正常營業，時間10:00-19:00' },
+    { key:'purchase', label:'💰 問價格', type:'purchase',
+      comment:'這件外套多少錢？還有M號嗎？',
+      post:'「拾物選物店」年中特賣正式開跑，即日起至月底，全館服飾配件85折，滿2000元再折200。',
+      brand:'拾物選物店', extra:'外套原價2480元，特價85折；尺寸庫存需私訊確認' },
+    { key:'complaint', label:'😠 客訴', type:'complaint',
+      comment:'上週買的蛋糕隔天就有點酸味，花錢買這種東西很失望，以後不會再買了',
+      post:'',
+      brand:'甜點時光', extra:'產品建議冷藏保存2天內食用；確認後可補寄或退款' },
+    { key:'troll',   label:'🙄 酸民', type:'troll',
+      comment:'這種價錢也敢賣？根本盤子吧，業配文一堆而已',
+      post:'本週六日限定，凡點任一杯手沖咖啡即贈自家烘焙餅乾一份。',
+      brand:'拾光咖啡', extra:'咖啡豆為自家烘焙，單品豆來源為衣索比亞與哥倫比亞產區' },
+    { key:'suggest', label:'💡 建議', type:'suggestion',
+      comment:'希望可以開週末的瑜伽班，平日晚上真的很難趕過去',
+      post:'「心境瑜伽」全新初階哈達瑜伽班即將開課，每週二四晚上7點。',
+      brand:'心境瑜伽', extra:'' }
+  ];
+
+  // 規則式關鍵詞判讀（優先序：惡意 > 抱怨 > 購買 > 建議 > 詢問 > 讚美 > 中性）
+  var TYPE_KEYWORDS = [
+    ['troll',      /智障|白癡|白痴|廢物|垃圾店|盤子|騙子|詐騙|業配文|倒一倒|倒閉|腦殘|去死|爛透/],
+    ['complaint',  /失望|生氣|不爽|很爛|難吃|難喝|太慢|很慢|退款|退費|退貨|客訴|壞掉|過期|酸味|發霉|態度很差|態度差|再也不|不會再|糟糕|誇張|等很久|沒收到|錯了|少了|騙/],
+    ['purchase',   /多少錢|價格|價錢|售價|怎麼買|哪裡買|下單|訂購|預訂|運費|折扣|優惠碼|還有貨|有貨|庫存|尺寸|[SMLX]{1,3}號|現貨|團購/],
+    ['suggestion', /建議|希望可以|希望能|如果能|如果可以|能不能|可不可以多|可以多|期待/],
+    ['question',   /請問|怎麼|如何|為什麼|幾點|哪裡|何時|什麼時候|有沒有|可以嗎|會不會|是不是|嗎[？?]?$|[？?]/],
+    ['praise',     /好吃|好喝|好看|好美|超讚|很讚|讚|喜歡|愛了|推推|推爆|必買|回購|太棒|很棒|好棒|感謝|謝謝|厲害|療癒|可愛|好用|超好/]
+  ];
+  function detectCommentType(text){
+    var t = (text || '').trim();
+    if(!t) return null;
+    for(var i = 0; i < TYPE_KEYWORDS.length; i++){
+      if(TYPE_KEYWORDS[i][1].test(t)) return TYPE_KEYWORDS[i][0];
+    }
+    return 'neutral';
+  }
+  function currentReplyType(){
+    var sel = $('replyType').value;
+    if(sel !== 'auto') return sel;
+    return detectCommentType($('replyComment').value) || 'neutral';
+  }
+
+  // 規則式回覆範本：{n}=稱呼、{we}=品牌名或「我們」、{info}=待補資訊標記
+  var INFO_MARK = '【待補資訊：請填入具體答案】';
+  var RULE_REPLY_TEMPLATES = {
+    thanks: {
+      _: ['{n}謝謝你的留言！看到這樣的回饋真的超開心，{we}會繼續努力，期待下次再見到你 😊',
+          '{n}收到你的支持了🙏 你的每一句話都是{we}前進的動力，真的很謝謝你！'],
+      complaint: ['{n}謝謝你願意花時間告訴{we}真實的感受，這對我們非常重要，我們會認真檢討改進。'],
+      suggestion: ['{n}謝謝你的寶貴建議！{we}已經記下來，會和團隊一起討論可行性 🙏'],
+      troll: ['{n}謝謝你的留言，不同的聲音{we}都會參考，也歡迎實際來體驗看看。']
+    },
+    answer: {
+      _: ['{n}謝謝詢問！{info}。還有其他想了解的，歡迎再留言或私訊{we}喔 😊'],
+      purchase: ['{n}謝謝詢問！{info}。想下單可以直接私訊或透過官網訂購，有任何問題小編都在～'],
+      complaint: ['{n}關於你遇到的狀況，{info}。{we}會盡快確認並給你明確的處理方式。'],
+      suggestion: ['{n}謝謝建議！目前{info}，你提到的方向{we}會列入下一階段的評估。'],
+      troll: ['{n}跟大家說明一下：{info}。有任何疑問都歡迎直接來問{we}。']
+    },
+    empathy: {
+      _: ['{n}真的很抱歉讓你有不好的體驗😣 你的感受{we}完全理解，我們會立刻了解狀況並改善，也希望有機會彌補你。'],
+      troll: ['{n}很抱歉沒能讓你滿意，{we}會虛心檢討，也希望未來有機會讓你改觀。'],
+      praise: ['{n}能讓你這麼開心，{we}也覺得好感動🥹 謝謝你願意分享！'],
+      neutral: ['{n}有任何想法都可以跟{we}說，我們都很樂意聽 🙏']
+    },
+    dm: {
+      _: ['{n}謝謝你的留言，為了更快協助你，麻煩私訊{we}詳細狀況，小編會盡快回覆 🙏'],
+      complaint: ['{n}非常抱歉造成你的困擾，已經私訊你了，麻煩提供訂單資訊讓{we}盡快協助處理 🙏'],
+      purchase: ['{n}謝謝詢問！詳細的規格與庫存已經私訊給你囉，請查看收件匣 📩']
+    },
+    promo: {
+      _: ['{n}謝謝你的喜愛！現在正好有優惠活動，{info}，喜歡的話別錯過喔 🛒',
+          '{n}好開心你喜歡！想再回味的話可以直接私訊預訂，{we}幫你保留 😊'],
+      purchase: ['{n}謝謝詢問！{info}，數量有限，想要的話可以私訊直接下單喔 🛒']
+    },
+    interact: {
+      _: ['{n}謝謝留言！好奇問一下，你最喜歡的是哪一個部分呢？也歡迎標記想一起來的朋友 😆',
+          '{n}收到！大家還想看{we}推出什麼呢？留言告訴我們吧 👇'],
+      suggestion: ['{n}好建議！也想問問其他朋友，如果有這個安排你們會想參加嗎？留言 +1 讓{we}知道 🙌'],
+      complaint: ['{n}謝謝你的回饋，也想問問其他朋友有沒有遇到類似狀況，{we}會一併檢討改善。']
+    },
+    humor: {
+      _: ['{n}被你這樣一說，小編在電腦前偷偷笑了😂 謝謝留言！',
+          '{n}小編已截圖準備拿去跟老闆邀功了（誤）😆 謝謝你！'],
+      troll: ['{n}小編收到你的熱情了😂 歡迎親自來體驗，說不定會改觀喔！'],
+      complaint: ['{n}小編先跪著道歉🙇 這次真的是我們的疏失，馬上改進！']
+    },
+    clarify: {
+      _: ['{n}謝謝留言，這邊跟大家說明一下：{info}。有任何疑問都歡迎直接私訊{we}，我們很樂意說明。'],
+      troll: ['{n}謝謝你的意見。跟大家說明：{info}。我們也歡迎實際來體驗再給評價 🙏'],
+      complaint: ['{n}很抱歉造成困擾，也想跟你說明一下：{info}。如果還有疑問，麻煩私訊{we}，我們一定負責到底。']
+    }
+  };
+
+  function ruleBasedReply(angle, type, ctx){
+    var set = RULE_REPLY_TEMPLATES[angle] || {};
+    var list = set[type] || set._ || [''];
+    var tpl = list[Math.floor(Math.random() * list.length)];
+    var info = ctx.extra ? ctx.extra.replace(/[。\s]+$/, '') : INFO_MARK;
+    return tpl
+      .replace(/\{n\}/g, ctx.name ? ctx.name + '，' : '')
+      .replace(/\{we\}/g, ctx.brand || '我們')
+      .replace(/\{info\}/g, info);
+  }
+
+  function getReplyRoleText(){
+    var sel = $('replyRoleSelect').value;
+    return sel === 'custom' ? $('replyRoleCustomInput').value.trim() : (ROLE_DESCRIPTIONS[sel] || '');
+  }
+
+  function buildReplyPrompt(ctx, angles){
+    var spec = PLATFORM_SPECS[ctx.platform];
+    var lines = [];
+    lines.push('你是一位熟悉台灣社群經營的社群小編與客服顧問，請針對以下粉絲留言，依指定的每一種「回應角度」各寫一則可直接貼上的公開回覆。');
+    lines.push('');
+    lines.push('留言所在平台：' + spec.label + '（回覆字數上限 ' + spec.charLimit + ' 字；留言回覆以 1～4 句、約 30～150 字為宜' + (ctx.platform === 'x' ? '，X 請控制在 200 字內' : '') + '）');
+    if(ctx.post) lines.push('原貼文內容：\n「' + ctx.post + '」');
+    lines.push('粉絲留言：\n「' + ctx.comment + '」');
+    if(ctx.name) lines.push('留言者稱呼：' + ctx.name + '（回覆中可自然地稱呼對方）');
+    if(ctx.brand) lines.push('品牌／店名：' + ctx.brand);
+    if(ctx.roleText) lines.push('請以這個身分的口吻回覆：' + ctx.roleText);
+    lines.push('留言類型判讀（供參考，若你判斷不同請在 analysis 說明）：' + COMMENT_TYPES[ctx.type].label);
+    if(ctx.extra){
+      lines.push('');
+      lines.push('使用者提供的已知資訊／額外要求（回答事實時只能使用這裡的資訊；要求部分請務必遵守）：\n' + ctx.extra);
+    } else {
+      lines.push('');
+      lines.push('使用者沒有提供任何已知資訊：遇到需要具體事實（價格、時間、規定、補償）的地方，請用「【待補：○○】」標記讓使用者自行填入，絕不自行編造。');
+    }
+    lines.push('');
+    lines.push('回應角度（每個鍵各寫一則，風格要彼此明顯不同）：');
+    angles.forEach(function(k){ lines.push('- ' + k + '：' + REPLY_ANGLE_PROMPTS[k]); });
+    lines.push('');
+    lines.push('共通原則：語氣真誠像真人小編，不要罐頭客套話；不要在公開回覆要求對方提供電話、地址等個資；不要與留言者爭吵或嘲諷；使用台灣慣用的繁體中文。');
+    lines.push('');
+    lines.push('請只輸出一個 JSON 物件，不要 markdown 圍欄、不要任何其他文字，格式如下：');
+    lines.push('{"analysis":"一句話判讀這則留言的情緒與真正訴求","replies":{' + angles.map(function(k){ return '"' + k + '":{"reply":"回覆全文","note":"一句話說明這版適合的使用時機或注意事項"}'; }).join(',') + '}}');
+    return lines.join('\n');
+  }
+
+  function updateReplyAiStatus(){
+    var el = $('replyAiStatus');
+    if(!el) return;
+    var key = $('aiKey').value.trim();
+    if(key){
+      el.innerHTML = '🤖 AI 模式：' + escapeHtml(AI_PROVIDERS[$('aiProvider').value].label) + '（' + escapeHtml($('aiModel').value.trim()) + '）——沿用「貼文產生」分頁的 AI 設定。';
+    } else {
+      el.innerHTML = '⚙️ 未設定 API 金鑰，將使用規則式範本（會留下【待補資訊】標記，回覆較制式）。<a id="replyGoAiSettings">前往設定 AI 金鑰 →</a>';
+      $('replyGoAiSettings').addEventListener('click', function(){
+        switchTab('post');
+        var d = document.querySelector('details.api-settings');
+        d.open = true;
+        d.scrollIntoView({behavior:'smooth', block:'center'});
+      });
+    }
+  }
+
+  var anglesTouched = false, lastRenderedType = null;
+  function renderAngleGrid(){
+    var type = currentReplyType();
+    var rec = COMMENT_TYPES[type].angles;
+    var checked = {};
+    document.querySelectorAll('#replyAngleGrid input:checked').forEach(function(el){ checked[el.value] = true; });
+    // 類型改變且使用者還沒手動調整過角度時，自動換成新類型的推薦角度
+    var hasExisting = document.querySelectorAll('#replyAngleGrid input').length > 0 && (anglesTouched || type === lastRenderedType);
+    lastRenderedType = type;
+    $('replyAngleGrid').innerHTML = Object.keys(REPLY_ANGLES).map(function(k){
+      var a = REPLY_ANGLES[k];
+      var isRec = rec.indexOf(k) >= 0;
+      var on = hasExisting ? !!checked[k] : isRec;
+      return '<label class="angle-check' + (isRec ? ' recommended' : '') + '">'
+        + '<input type="checkbox" value="' + k + '"' + (on ? ' checked' : '') + '>'
+        + '<span><span class="a-name">' + a.label + (isRec ? '<span class="a-rec">推薦</span>' : '') + '</span>'
+        + '<span class="a-desc">' + a.desc + '</span></span></label>';
+    }).join('');
+    var sel = $('replyType').value;
+    $('replyTypeDetected').textContent = COMMENT_TYPES[type].label + (sel === 'auto' ? '（自動判讀）' : '（手動指定）');
+  }
+  function applyRecommendedAngles(){
+    var rec = COMMENT_TYPES[currentReplyType()].angles;
+    document.querySelectorAll('#replyAngleGrid input').forEach(function(el){ el.checked = rec.indexOf(el.value) >= 0; });
+    anglesTouched = false;
+    saveReplyDraft();
+  }
+  function selectedAngles(){
+    return Array.from(document.querySelectorAll('#replyAngleGrid input:checked')).map(function(el){ return el.value; });
+  }
+
+  function renderReplyResults(type, angles, replies, analysis, platform){
+    var limit = PLATFORM_SPECS[platform].charLimit;
+    var tips = COMMENT_TYPE_ADVICE[type] || [];
+    var html = '<div class="advice-box"><strong>「' + COMMENT_TYPES[type].label + '」處理建議</strong>'
+      + (analysis ? '<div style="margin-top:6px;">🔍 AI 判讀：' + escapeHtml(analysis) + '</div>' : '')
+      + '<ul>' + tips.map(function(t){ return '<li>' + escapeHtml(t) + '</li>'; }).join('') + '</ul></div>';
+    html += '<div class="results-grid">' + angles.map(function(k){
+      var r = replies[k] || {reply:'', note:''};
+      return '<div class="card reply-card" data-angle="' + k + '">'
+        + '<div class="result-head"><div class="result-title">' + REPLY_ANGLES[k].label + '</div>'
+        + '<span class="char-meter">' + charMeterHtml(r.reply.length, limit) + '</span></div>'
+        + '<textarea class="result-text" data-limit="' + limit + '">' + escapeHtml(r.reply) + '</textarea>'
+        + (r.note ? '<div class="reply-note">📝 ' + escapeHtml(r.note) + '</div>' : '')
+        + '<div class="result-actions"><button type="button" class="btn copy-reply-btn">複製回覆</button></div>'
+        + '</div>';
+    }).join('') + '</div>';
+    var box = $('replyResults');
+    box.innerHTML = html;
+    box.querySelectorAll('.result-text').forEach(function(ta){
+      ta.addEventListener('input', function(){
+        ta.closest('.reply-card').querySelector('.char-meter').innerHTML = charMeterHtml(ta.value.length, limit);
+      });
+    });
+    box.querySelectorAll('.copy-reply-btn').forEach(function(btn){
+      btn.addEventListener('click', function(){ copyText(btn.closest('.reply-card').querySelector('.result-text').value); });
+    });
+  }
+
+  var REPLY_DRAFT_KEY = 'socialpostReplyDraft';
+  var REPLY_FIELDS = ['replyComment','replyPost','replyType','replyRoleSelect','replyRoleCustomInput','replyPlatform','replyName','replyBrand','replyExtra'];
+  function saveReplyDraft(){
+    try{
+      var d = {};
+      REPLY_FIELDS.forEach(function(id){ d[id] = $(id).value; });
+      d.angles = selectedAngles();
+      localStorage.setItem(REPLY_DRAFT_KEY, JSON.stringify(d));
+    }catch(e){}
+  }
+  function loadReplyDraft(){
+    try{
+      var d = JSON.parse(localStorage.getItem(REPLY_DRAFT_KEY));
+      if(!d) return null;
+      REPLY_FIELDS.forEach(function(id){ if(typeof d[id] === 'string' && d[id] !== '') $(id).value = d[id]; });
+      return d;
+    }catch(e){ return null; }
+  }
+
+  function initReplyTab(){
+    $('replyType').innerHTML = '<option value="auto">🔍 自動判讀</option>' + Object.keys(COMMENT_TYPES).map(function(k){
+      return '<option value="' + k + '">' + COMMENT_TYPES[k].label + '</option>';
+    }).join('');
+    $('replyRoleSelect').innerHTML = Object.keys(ROLE_LABELS).map(function(k){
+      return '<option value="' + k + '">' + ROLE_LABELS[k] + '</option>';
+    }).join('') + '<option value="custom">✏️ 自訂角色…</option>';
+
+    var draft = loadReplyDraft();
+    syncCustomInputVisibility('replyRoleSelect', 'replyRoleCustomInput');
+    renderAngleGrid();
+    if(draft && Array.isArray(draft.angles) && draft.angles.length){
+      document.querySelectorAll('#replyAngleGrid input').forEach(function(el){ el.checked = draft.angles.indexOf(el.value) >= 0; });
+      anglesTouched = true;
+    }
+
+    $('replyExampleRow').innerHTML = REPLY_EXAMPLES.map(function(ex){
+      return '<button type="button" class="example-btn" data-key="' + ex.key + '">' + ex.label + '</button>';
+    }).join('');
+    $('replyExampleRow').addEventListener('click', function(e){
+      var btn = e.target.closest('.example-btn');
+      if(!btn) return;
+      var ex = REPLY_EXAMPLES.find(function(x){ return x.key === btn.getAttribute('data-key'); });
+      if(!ex) return;
+      if($('replyComment').value.trim() && !confirm('套用範例會覆蓋目前已輸入的留言，確定要繼續嗎？')) return;
+      $('replyComment').value = ex.comment;
+      $('replyPost').value = ex.post;
+      $('replyBrand').value = ex.brand;
+      $('replyExtra').value = ex.extra;
+      $('replyName').value = '';
+      $('replyType').value = 'auto';
+      anglesTouched = false;
+      renderAngleGrid();
+      applyRecommendedAngles();
+      saveReplyDraft();
+      showToast('已套用範例：' + ex.label);
+    });
+
+    var detectTimer = null;
+    $('replyComment').addEventListener('input', function(){
+      saveReplyDraft();
+      if($('replyType').value !== 'auto') return;
+      clearTimeout(detectTimer);
+      detectTimer = setTimeout(renderAngleGrid, 300);
+    });
+    $('replyType').addEventListener('change', function(){ renderAngleGrid(); applyRecommendedAngles(); });
+    $('replyRoleSelect').addEventListener('change', function(){ syncCustomInputVisibility('replyRoleSelect', 'replyRoleCustomInput'); saveReplyDraft(); });
+    ['replyPost','replyRoleCustomInput','replyName','replyBrand','replyExtra'].forEach(function(id){ $(id).addEventListener('input', saveReplyDraft); });
+    $('replyPlatform').addEventListener('change', saveReplyDraft);
+    $('replyAngleGrid').addEventListener('change', function(){ anglesTouched = true; saveReplyDraft(); });
+    $('replyUseRecBtn').addEventListener('click', applyRecommendedAngles);
+
+    $('replyPullPostBtn').addEventListener('click', function(){
+      var fbText = document.querySelector('#resultsGrid .result-text');
+      var text = fbText ? fbText.value.trim() : $('topicInput').value.trim();
+      if(!text){ showToast('「貼文產生」分頁目前沒有內容可帶入'); return; }
+      $('replyPost').value = text;
+      saveReplyDraft();
+      showToast(fbText ? '已帶入產生的貼文內容' : '已帶入貼文主題');
+    });
+
+    $('replyCopyAllBtn').addEventListener('click', function(){
+      var cards = document.querySelectorAll('#replyResults .reply-card');
+      if(!cards.length){ showToast('尚未產生回覆，無法複製'); return; }
+      copyText(Array.from(cards).map(function(c){
+        return '【' + c.querySelector('.result-title').textContent.trim() + '】\n' + c.querySelector('.result-text').value;
+      }).join('\n\n'));
+    });
+
+    $('replyGenerateBtn').addEventListener('click', generateReplies);
+    updateReplyAiStatus();
+  }
+
+  async function generateReplies(){
+    var report = $('replyReport');
+    var ctx = {
+      comment: $('replyComment').value.trim(),
+      post: $('replyPost').value.trim(),
+      name: $('replyName').value.trim(),
+      brand: $('replyBrand').value.trim(),
+      extra: $('replyExtra').value.trim(),
+      platform: $('replyPlatform').value,
+      roleText: getReplyRoleText(),
+      type: currentReplyType()
+    };
+    var angles = selectedAngles();
+    if(!ctx.comment){ report.innerHTML = '<div class="bad">請先貼上粉絲留言內容</div>'; return; }
+    if(!angles.length){ report.innerHTML = '<div class="bad">請至少勾選一個回應角度</div>'; return; }
+
+    var apiKey = $('aiKey').value.trim();
+    var provider = $('aiProvider').value;
+    var model = $('aiModel').value.trim();
+    var btn = $('replyGenerateBtn');
+    btn.disabled = true;
+    var replies = {}, analysis = '';
+
+    function fillRule(k){ replies[k] = { reply: ruleBasedReply(k, ctx.type, ctx), note: '' }; }
+
+    if(apiKey){
+      report.innerHTML = '<div class="ok">呼叫 ' + AI_PROVIDERS[provider].label + '（' + escapeHtml(model) + '）產生 ' + angles.length + ' 種角度的回覆中，請稍候…</div>';
+      try{
+        var text = await callLLM(provider, model, apiKey, buildReplyPrompt(ctx, angles), function(attempt, status, waitSec){
+          report.innerHTML = '<div class="warn">API 回應 ' + status + '（服務商暫時過載／限流），' + waitSec + ' 秒後自動重試（第 ' + attempt + '／2 次）…</div>';
+        });
+        var parsed = extractJsonObject(text);
+        analysis = typeof parsed.analysis === 'string' ? parsed.analysis.trim() : '';
+        var src = parsed.replies || {};
+        var missing = [];
+        angles.forEach(function(k){
+          var r = src[k];
+          var reply = r && (typeof r === 'string' ? r : r.reply);
+          if(typeof reply === 'string' && reply.trim()){
+            replies[k] = { reply: reply.trim(), note: (r && typeof r.note === 'string') ? r.note.trim() : '' };
+          } else {
+            fillRule(k);
+            missing.push(REPLY_ANGLES[k].label);
+          }
+        });
+        report.innerHTML = '<div class="ok">已產生 ' + angles.length + ' 種角度的回覆建議，請檢查內容（尤其是事實資訊）後再貼上回覆。</div>'
+          + (missing.length ? '<div class="warn">' + missing.join('、') + ' 未取得 AI 結果，已改用規則式範本。</div>' : '');
+      }catch(err){
+        var msg = err.name === 'TimeoutError' ? '請求逾時（180秒）' : err.message;
+        report.innerHTML = '<div class="bad">AI 產生失敗：' + escapeHtml(msg) + '，已全部改用規則式範本。</div>';
+        angles.forEach(fillRule);
+      }
+    } else {
+      angles.forEach(fillRule);
+      report.innerHTML = '<div class="warn">未填 API 金鑰，已使用規則式範本產生（較制式，' + (ctx.extra ? '已代入你填寫的已知資訊' : '請把【待補資訊】替換成實際內容') + '）。串接 AI 可依留言內容量身撰寫。</div>';
+    }
+
+    renderReplyResults(ctx.type, angles, replies, analysis, ctx.platform);
+    btn.disabled = false;
+  }
+
   /* ---------- 草稿持久化 ---------- */
   var DRAFT_KEY = 'socialpostDraft';
   function saveDraft(){
@@ -1139,6 +1703,8 @@
   loadDraft();
   initAiPanel();
   initExamples();
+  initReplyTab();
+  initTabs();
 })();
 </script>
 
